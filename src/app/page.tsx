@@ -1,69 +1,116 @@
-import Image from "next/image";
+import {
+  Activity,
+  ArrowRight,
+  BadgeCheck,
+  Braces,
+  GitCompareArrows,
+  Layers3,
+  Radar,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { EvaluationConsole } from "@/components/evaluation-console";
+
+const capabilities = [
+  {
+    icon: GitCompareArrows,
+    title: "Parallel patch comparison",
+    text: "Run multiple candidate implementations against the same acceptance contract.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Release gates, not vibes",
+    text: "Tests, contracts, security, migrations, performance and evidence are first-class boundaries.",
+  },
+  {
+    icon: Radar,
+    title: "Evidence bundles",
+    text: "Every decision carries the runtime proof needed to reproduce why a patch passed or failed.",
+  },
+  {
+    icon: Layers3,
+    title: "Human-owned acceptance",
+    text: "Agents propose. The evaluator verifies. A human keeps final merge authority.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main>
+      <nav className="nav-shell">
+        <a className="brand" href="#">
+          <span className="brand-mark">SP</span>
+          <span>ShipProof</span>
+        </a>
+        <div className="nav-links">
+          <a href="#console">Demo</a>
+          <a href="#architecture">Architecture</a>
+          <a className="nav-cta" href="#console">Run proof <ArrowRight size={15} /></a>
+        </div>
+      </nav>
+
+      <section className="hero">
+        <div className="hero-badge"><Sparkles size={15} />AI-native production engineering</div>
+
+        <h1>
+          Agents can write code.
+          <span>ShipProof decides if it is safe to ship.</span>
+        </h1>
+
+        <p className="hero-copy">
+          A production control plane for AI-generated software. Compare competing
+          patches, execute release gates, capture evidence, and produce an auditable
+          merge decision.
+        </p>
+
+        <div className="hero-actions">
+          <a className="primary-action" href="#console">Try the live evaluation <ArrowRight size={17} /></a>
+          <a className="secondary-action" href="#architecture">See architecture</a>
+        </div>
+
+        <div className="trust-row">
+          <span><BadgeCheck size={15} /> deterministic evaluator</span>
+          <span><Braces size={15} /> TypeScript-first</span>
+          <span><Activity size={15} /> observable by default</span>
+        </div>
+      </section>
+
+      <section className="capability-grid">
+        {capabilities.map(({ icon: Icon, title, text }) => (
+          <article className="capability-card" key={title}>
+            <div className="capability-icon"><Icon size={19} /></div>
+            <h2>{title}</h2>
+            <p>{text}</p>
+          </article>
+        ))}
+      </section>
+
+      <EvaluationConsole />
+
+      <section className="architecture-section" id="architecture">
+        <div className="architecture-copy">
+          <p className="eyebrow">Architecture</p>
+          <h2>Velocity on one side. Verification on the other.</h2>
+          <p>
+            ShipProof treats model output as an untrusted proposal. Each candidate
+            moves through a deterministic evaluator before a release decision is
+            produced.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="architecture-flow">
+          <div className="flow-node"><span>01</span><strong>Candidate agents</strong><small>Parallel worktrees and patch manifests</small></div>
+          <ArrowRight className="flow-arrow" />
+          <div className="flow-node accent"><span>02</span><strong>Evidence engine</strong><small>Tests, contracts, security, migrations, perf</small></div>
+          <ArrowRight className="flow-arrow" />
+          <div className="flow-node"><span>03</span><strong>Human gate</strong><small>MERGE, NEEDS_WORK or REJECT with proof</small></div>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <footer>
+        <div className="brand footer-brand"><span className="brand-mark">SP</span><span>ShipProof</span></div>
+        <p>Evidence first software delivery for AI-native engineering teams.</p>
+      </footer>
+    </main>
   );
 }
