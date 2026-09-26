@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local visual verification artifacts
+.chrome-headless.log
+shipproof-home.png
