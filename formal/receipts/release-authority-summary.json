@@ -1,0 +1,30 @@
+{
+  "schema": "archeagent.formal.release_authority.v1",
+  "tool": {
+    "name": "TLC",
+    "tla2tools": "v1.7.4",
+    "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "seed": 20260927,
+    "fingerprint_polynomial": 65,
+    "workers": 1
+  },
+  "inputs": {
+    "spec_sha256": "fbdefae81e2c4971fbaf91acd06373145335e75f9fab3e50b9b83b424992ba0b",
+    "safe_config_sha256": "9315e29508f7ca81034424964726df0119b8fb75364919b9f4ba9c43ea706a31",
+    "negative_config_sha256": "c7c82609177b5d3b1ccb9ed69d688380893d7103e0554c2025056afd07434c0e"
+  },
+  "safe_model": {
+    "passed": true,
+    "states_generated": 92577,
+    "distinct_states": 19554,
+    "states_left": 0,
+    "graph_depth": 18
+  },
+  "negative_control": {
+    "expected_violation_observed": true,
+    "violated_invariant": "ReleaseBindsExactState",
+    "process_exit_code": 12,
+    "counterexample_contains_base_drift": true,
+    "counterexample_contains_unsafe_release": true
+  }
+}

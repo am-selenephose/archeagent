@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import {
   Activity,
   ArrowRight,
@@ -10,27 +11,36 @@ import {
   Sparkles,
 } from "lucide-react";
 import { EvaluationConsole } from "@/components/evaluation-console";
+import { IntelligenceConsole } from "@/components/intelligence-console";
+import formalReceipt from "../../formal/receipts/release-authority-summary.json";
+import { assertFormalReceiptFresh } from "@/core/formal-receipt";
+
+assertFormalReceiptFresh(formalReceipt, {
+  spec: readFileSync("formal/ReleaseAuthority.tla"),
+  safeConfig: readFileSync("formal/ReleaseAuthority.cfg"),
+  negativeConfig: readFileSync("formal/ReleaseAuthorityUnsafe.cfg"),
+});
 
 const capabilities = [
   {
     icon: GitCompareArrows,
-    title: "Parallel patch comparison",
-    text: "Run multiple candidate implementations against the same acceptance contract.",
+    title: "Contextual labor intelligence",
+    text: "Route work from repository and task-specific outcome history instead of one global model leaderboard.",
   },
   {
     icon: ShieldCheck,
-    title: "Release gates, not vibes",
-    text: "Tests, contracts, security, migrations, performance and evidence are first-class boundaries.",
+    title: "Proof-carrying release authority",
+    text: "Short-lived Ed25519 release leases bind permission to exact code, policy, evidence and environment.",
   },
   {
     icon: Radar,
-    title: "Evidence bundles",
-    text: "Every decision carries the runtime proof needed to reproduce why a patch passed or failed.",
+    title: "Model-checked invariants",
+    text: formalReceipt.safe_model.distinct_states.toLocaleString() + " reachable release states checked with a negative-control counterexample.",
   },
   {
     icon: Layers3,
-    title: "Human-owned acceptance",
-    text: "Agents propose. The evaluator verifies. A human keeps final merge authority.",
+    title: "Isolated execution plane",
+    text: "A Go runtime enforces bounded container execution with network-off, read-only and resource-limited defaults.",
   },
 ];
 
@@ -39,7 +49,7 @@ export default function Home() {
     <main>
       <nav className="nav-shell">
         <a className="brand" href="#">
-          <span className="brand-mark">SP</span>
+          <span className="brand-mark">AR</span>
           <span>Archeagent</span>
         </a>
         <div className="nav-links">
@@ -50,17 +60,17 @@ export default function Home() {
       </nav>
 
       <section className="hero">
-        <div className="hero-badge"><Sparkles size={15} />AI-native production engineering</div>
+        <div className="hero-badge"><Sparkles size={15} />Outcome-grounded agent engineering</div>
 
         <h1>
-          Agents can write code.
-          <span>Archeagent decides if it is safe to ship.</span>
+          Do not trust the model.
+          <span>Trust the measured worker, the evidence, and the exact release state.</span>
         </h1>
 
         <p className="hero-copy">
-          A production control plane for AI-generated software. Compare competing
-          patches, execute release gates, capture evidence, and produce an auditable
-          merge decision.
+          Archeagent learns which coding agents and reviewer pairs are reliable for
+          each class of work, limits what authority they earn, and issues release
+          permission only for an exact independently verified state.
         </p>
 
         <div className="hero-actions">
@@ -69,9 +79,9 @@ export default function Home() {
         </div>
 
         <div className="trust-row">
-          <span><BadgeCheck size={15} /> deterministic evaluator</span>
-          <span><Braces size={15} /> TypeScript-first</span>
-          <span><Activity size={15} /> observable by default</span>
+          <span><BadgeCheck size={15} /> contextual trust</span>
+          <span><Braces size={15} /> TypeScript + Go</span>
+          <span><Activity size={15} /> TLA+ model checked</span>
         </div>
       </section>
 
@@ -83,6 +93,26 @@ export default function Home() {
             <p>{text}</p>
           </article>
         ))}
+      </section>
+
+      <IntelligenceConsole />
+
+      <section className="formal-receipt">
+        <div>
+          <p className="eyebrow">Machine-checked release authority</p>
+          <h2>{formalReceipt.safe_model.distinct_states.toLocaleString()} reachable states. Zero invariant violations.</h2>
+          <p>
+            The safe TLA+ model completed the entire bounded state graph. A negative
+            control that intentionally omitted exact base-commit fencing produced the
+            expected counterexample.
+          </p>
+        </div>
+        <div className="formal-stats">
+          <span><strong>{formalReceipt.safe_model.states_generated.toLocaleString()}</strong> states generated</span>
+          <span><strong>{formalReceipt.safe_model.graph_depth}</strong> graph depth</span>
+          <span><strong>PASS</strong> safe model</span>
+          <span className="negative-stat"><strong>CAUGHT</strong> unsafe verifier</span>
+        </div>
       </section>
 
       <EvaluationConsole />
@@ -108,7 +138,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <div className="brand footer-brand"><span className="brand-mark">SP</span><span>Archeagent</span></div>
+        <div className="brand footer-brand"><span className="brand-mark">AR</span><span>Archeagent</span></div>
         <p>Evidence first software delivery for AI-native engineering teams.</p>
       </footer>
     </main>

@@ -1,0 +1,25 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 65 and seed 20260927 with 1 worker on 24 cores with 27305MB heap and 64MB offheap memory [pid: 819184] (Linux 7.1.8-arch1-3 amd64, Arch Linux 26.0.2.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /home/nur/Projects/archeagent/formal/ReleaseAuthority.tla
+Parsing file /tmp/Naturals.tla
+Parsing file /tmp/Integers.tla
+Parsing file /tmp/TLC.tla
+Parsing file /tmp/Sequences.tla
+Parsing file /tmp/FiniteSets.tla
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module ReleaseAuthority
+Starting... (2026-09-27 05:09:29)
+Computing initial states...
+Finished computing initial states: 2 distinct states generated at 2026-09-27 05:09:30.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 7.7E-11
+92577 states generated, 19554 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 18.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 9 and the 95th percentile is 3).
+Finished in 01s at (2026-09-27 05:09:30)

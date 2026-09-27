@@ -1,0 +1,198 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 65 and seed 20260927 with 1 worker on 24 cores with 27305MB heap and 64MB offheap memory [pid: 819236] (Linux 7.1.8-arch1-3 amd64, Arch Linux 26.0.2.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /home/nur/Projects/archeagent/formal/ReleaseAuthority.tla
+Parsing file /tmp/Naturals.tla
+Parsing file /tmp/Integers.tla
+Parsing file /tmp/TLC.tla
+Parsing file /tmp/Sequences.tla
+Parsing file /tmp/FiniteSets.tla
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module ReleaseAuthority
+Starting... (2026-09-27 05:09:31)
+Computing initial states...
+Finished computing initial states: 2 distinct states generated at 2026-09-27 05:09:31.
+Error: Invariant ReleaseBindsExactState is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ policyV = 0
+/\ leasePolicyV = -1
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = -1
+/\ leaseBaseV = -1
+/\ leasePatchV = -1
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = FALSE
+/\ patchV = 0
+/\ leaseEvidenceV = -1
+/\ retries = 0
+/\ baseV = 0
+/\ released = FALSE
+/\ evidenceReady = FALSE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "SHADOW"
+/\ environmentV = 0
+/\ calibrated = FALSE
+/\ budget = 2
+
+State 2: <GatherEvidence line 111, col 3 to line 119, col 76 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = -1
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = -1
+/\ leaseBaseV = -1
+/\ leasePatchV = -1
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = FALSE
+/\ patchV = 0
+/\ leaseEvidenceV = -1
+/\ retries = 0
+/\ baseV = 0
+/\ released = FALSE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "SHADOW"
+/\ environmentV = 0
+/\ calibrated = FALSE
+/\ budget = 2
+
+State 3: <Calibrate line 133, col 3 to line 141, col 76 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = -1
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = -1
+/\ leaseBaseV = -1
+/\ leasePatchV = -1
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = FALSE
+/\ patchV = 0
+/\ leaseEvidenceV = -1
+/\ retries = 0
+/\ baseV = 0
+/\ released = FALSE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "SHADOW"
+/\ environmentV = 0
+/\ calibrated = TRUE
+/\ budget = 2
+
+State 4: <PromoteToPropose line 144, col 3 to line 153, col 76 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = -1
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = -1
+/\ leaseBaseV = -1
+/\ leasePatchV = -1
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = FALSE
+/\ patchV = 0
+/\ leaseEvidenceV = -1
+/\ retries = 0
+/\ baseV = 0
+/\ released = FALSE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "PROPOSE"
+/\ environmentV = 0
+/\ calibrated = TRUE
+/\ budget = 2
+
+State 5: <IssueLease line 180, col 3 to line 196, col 59 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = 0
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = 0
+/\ leaseBaseV = 0
+/\ leasePatchV = 0
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = TRUE
+/\ patchV = 0
+/\ leaseEvidenceV = 0
+/\ retries = 0
+/\ baseV = 0
+/\ released = FALSE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "PROPOSE"
+/\ environmentV = 0
+/\ calibrated = TRUE
+/\ budget = 2
+
+State 6: <DriftBase line 199, col 3 to line 207, col 76 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = 0
+/\ replayAttempts = 0
+/\ leaseConsumed = FALSE
+/\ leaseEnvironmentV = 0
+/\ leaseBaseV = 0
+/\ leasePatchV = 0
+/\ risk = "low"
+/\ releaseCount = 0
+/\ leaseIssued = TRUE
+/\ patchV = 0
+/\ leaseEvidenceV = 0
+/\ retries = 0
+/\ baseV = 1
+/\ released = FALSE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "PROPOSE"
+/\ environmentV = 0
+/\ calibrated = TRUE
+/\ budget = 2
+
+State 7: <UnsafeReleaseIgnoresBase line 347, col 3 to line 368, col 52 of module ReleaseAuthority>
+/\ policyV = 0
+/\ leasePolicyV = 0
+/\ replayAttempts = 0
+/\ leaseConsumed = TRUE
+/\ leaseEnvironmentV = 0
+/\ leaseBaseV = 0
+/\ leasePatchV = 0
+/\ risk = "low"
+/\ releaseCount = 1
+/\ leaseIssued = TRUE
+/\ patchV = 0
+/\ leaseEvidenceV = 0
+/\ retries = 0
+/\ baseV = 1
+/\ released = TRUE
+/\ evidenceReady = TRUE
+/\ evidenceV = 0
+/\ expired = FALSE
+/\ humanApproved = FALSE
+/\ authority = "PROPOSE"
+/\ environmentV = 0
+/\ calibrated = TRUE
+/\ budget = 2
+
+5628 states generated, 1393 distinct states found, 651 states left on queue.
+The depth of the complete state graph search is 7.
+The average outdegree of the complete state graph is 2 (minimum is 0, the maximum 9 and the 95th percentile is 6).
+Finished in 00s at (2026-09-27 05:09:32)
