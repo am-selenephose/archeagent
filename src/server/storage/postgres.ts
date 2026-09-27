@@ -53,26 +53,49 @@ export function createArcheagentStore(databaseUrl: string) {
     },
 
     async saveMission(mission: Mission) {
-      await sql.unsafe(
+      const payload = JSON.stringify(mission);
+      const inserted = await sql.unsafe(
         'insert into missions (id, repository, objective, budget_usd, payload) ' +
-        'values ($1, $2, $3, $4, $5::jsonb) on conflict (id) do nothing',
+        'values ($1, $2, $3, $4, $5::jsonb) ' +
+        'on conflict (id) do nothing returning id',
         [
           mission.id,
           mission.repository,
           mission.objective,
           mission.budgetUsd,
-          JSON.stringify(mission),
+          payload,
         ],
       );
+
+      if (inserted.length > 0) return;
+
+      const existingRows = await sql.unsafe(
+        'select (' +
+          'repository = $2 and objective = $3 and budget_usd = $4 and payload = $5::jsonb' +
+        ') as exact ' +
+        'from missions where id = $1',
+        [
+          mission.id,
+          mission.repository,
+          mission.objective,
+          mission.budgetUsd,
+          payload,
+        ],
+      );
+
+      if (existingRows[0]?.exact !== true) {
+        throw new Error('Mission conflict for ' + mission.id);
+      }
     },
 
     async appendEvents(events: OrchestratorEvent[]) {
       for (const event of events) {
-        await sql.unsafe(
+        const inserted = await sql.unsafe(
           'insert into orchestrator_events ' +
           '(mission_id, sequence, type, task_id, agent_id, detail, at) ' +
           'values ($1, $2, $3, $4, $5, $6, $7) ' +
-          'on conflict (mission_id, sequence) do nothing',
+          'on conflict (mission_id, sequence) do nothing ' +
+          'returning mission_id',
           [
             event.missionId,
             event.sequence,
@@ -83,6 +106,45 @@ export function createArcheagentStore(databaseUrl: string) {
             event.at,
           ],
         );
+
+        if (inserted.length > 0) continue;
+
+        const existingRows = await sql.unsafe(
+          'select type, task_id, agent_id, detail, at ' +
+          'from orchestrator_events where mission_id = $1 and sequence = $2',
+          [event.missionId, event.sequence],
+        );
+
+        const existing = existingRows[0] as unknown as
+          | {
+              type: string;
+              task_id: string | null;
+              agent_id: string | null;
+              detail: string;
+              at: Date | string;
+            }
+          | undefined;
+
+        const existingAt = existing
+          ? new Date(existing.at).toISOString()
+          : null;
+        const incomingAt = new Date(event.at).toISOString();
+
+        const exactReplay =
+          existing?.type === event.type &&
+          existing.task_id === (event.taskId ?? null) &&
+          existing.agent_id === (event.agentId ?? null) &&
+          existing.detail === event.detail &&
+          existingAt === incomingAt;
+
+        if (!exactReplay) {
+          throw new Error(
+            'Orchestrator event conflict for ' +
+              event.missionId +
+              '#' +
+              event.sequence,
+          );
+        }
       }
     },
 
