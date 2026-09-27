@@ -40,7 +40,7 @@ export default function Home() {
       <nav className="nav-shell">
         <a className="brand" href="#">
           <span className="brand-mark">SP</span>
-          <span>ShipProof</span>
+          <span>Archeagent</span>
         </a>
         <div className="nav-links">
           <a href="#console">Demo</a>
@@ -54,7 +54,7 @@ export default function Home() {
 
         <h1>
           Agents can write code.
-          <span>ShipProof decides if it is safe to ship.</span>
+          <span>Archeagent decides if it is safe to ship.</span>
         </h1>
 
         <p className="hero-copy">
@@ -92,7 +92,7 @@ export default function Home() {
           <p className="eyebrow">Architecture</p>
           <h2>Velocity on one side. Verification on the other.</h2>
           <p>
-            ShipProof treats model output as an untrusted proposal. Each candidate
+            Archeagent treats model output as an untrusted proposal. Each candidate
             moves through a deterministic evaluator before a release decision is
             produced.
           </p>
@@ -108,7 +108,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <div className="brand footer-brand"><span className="brand-mark">SP</span><span>ShipProof</span></div>
+        <div className="brand footer-brand"><span className="brand-mark">SP</span><span>Archeagent</span></div>
         <p>Evidence first software delivery for AI-native engineering teams.</p>
       </footer>
     </main>

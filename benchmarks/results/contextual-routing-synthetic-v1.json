@@ -1,0 +1,53 @@
+{
+  "benchmark": "archeagent-contextual-routing-synthetic-v1",
+  "qualification": "Deterministic synthetic benchmark. It validates routing mechanics only and is not evidence of real model performance.",
+  "seed": 20260927,
+  "trainingTrialsPerAgentContext": 40,
+  "heldOutTrials": 640,
+  "routes": [
+    {
+      "taskClass": "authorization",
+      "staticAgent": "systems",
+      "contextualAgent": "security",
+      "oracleAgent": "security",
+      "contextualConservativeTrust": 0.9036
+    },
+    {
+      "taskClass": "migration",
+      "staticAgent": "systems",
+      "contextualAgent": "systems",
+      "oracleAgent": "systems",
+      "contextualConservativeTrust": 0.8088
+    },
+    {
+      "taskClass": "concurrency",
+      "staticAgent": "systems",
+      "contextualAgent": "systems",
+      "oracleAgent": "systems",
+      "contextualConservativeTrust": 0.8388
+    },
+    {
+      "taskClass": "frontend",
+      "staticAgent": "systems",
+      "contextualAgent": "generalist",
+      "oracleAgent": "generalist",
+      "contextualConservativeTrust": 0.8088
+    }
+  ],
+  "staticBaseline": {
+    "agent": "systems",
+    "successRate": 0.853125,
+    "averageCostUsd": 0.6200000000000035
+  },
+  "contextualRouter": {
+    "successRate": 0.9328125,
+    "averageCostUsd": 0.5825000000000073
+  },
+  "oracleUpperBound": {
+    "successRate": 0.940625
+  },
+  "delta": {
+    "successRate": 0.07968750000000002,
+    "averageCostUsd": -0.0374999999999962
+  }
+}

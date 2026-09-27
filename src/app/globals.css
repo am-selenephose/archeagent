@@ -249,3 +249,266 @@ footer p { margin: 0; color: var(--muted); font-size: 12px; }
   .progress-grid { grid-template-columns: 1fr 1fr; }
   .detail-copy, .gate-list { padding-inline: 16px; }
 }
+
+/* --------------------------------------------------------------------------
+   Archeagent identity palette
+   Intentionally avoids the default neon-green-on-charcoal AI SaaS aesthetic.
+   Aubergine + sulfur + oxidized teal + vermilion + periwinkle + parchment.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --bg: #140d17;
+  --panel: rgba(30, 20, 34, 0.86);
+  --panel-strong: #211627;
+  --line: rgba(247, 237, 220, 0.11);
+  --text: #f7eddc;
+  --soft: #c9b7c8;
+  --muted: #8e8094;
+
+  /* Existing semantic token retained for compatibility, but no longer neon green. */
+  --green: #43c7ad;
+  --amber: #e7ff5d;
+  --red: #ff6b4a;
+  --blue: #91a7ff;
+
+  --acid: #e7ff5d;
+  --oxide: #43c7ad;
+  --vermilion: #ff6b4a;
+  --periwinkle: #91a7ff;
+  --parchment: #f7eddc;
+  --aubergine: #140d17;
+  --plum: #2a1930;
+}
+
+body {
+  background:
+    radial-gradient(circle at 14% 5%, rgba(255, 107, 74, 0.12), transparent 28%),
+    radial-gradient(circle at 84% 8%, rgba(145, 167, 255, 0.13), transparent 28%),
+    radial-gradient(circle at 62% 68%, rgba(67, 199, 173, 0.07), transparent 34%),
+    var(--bg);
+}
+
+body::before {
+  opacity: 0.17;
+  background-image:
+    linear-gradient(rgba(247, 237, 220, .028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(247, 237, 220, .028) 1px, transparent 1px);
+}
+
+.nav-shell {
+  background: rgba(24, 14, 28, 0.82);
+  border-color: rgba(231, 255, 93, 0.12);
+  box-shadow: 0 18px 50px rgba(10, 4, 14, .34);
+}
+
+.brand-mark {
+  color: var(--acid);
+  border-color: rgba(231, 255, 93, .34);
+  background: rgba(231, 255, 93, .065);
+}
+
+.nav-cta,
+.primary-action,
+.run-button {
+  color: #18110c !important;
+  background: var(--acid);
+  border-color: rgba(231, 255, 93, .5);
+  box-shadow: 0 12px 30px rgba(231, 255, 93, .09);
+}
+
+.nav-cta:hover,
+.primary-action:hover,
+.run-button:hover:not(:disabled) {
+  background: #f0ff88;
+}
+
+.hero-badge,
+.eyebrow {
+  color: var(--oxide);
+}
+
+.hero-badge {
+  border-color: rgba(67, 199, 173, .24);
+  background: rgba(67, 199, 173, .065);
+}
+
+.hero h1 {
+  color: var(--parchment);
+}
+
+.hero h1 span {
+  color: #b9a6c1;
+}
+
+.secondary-action {
+  border-color: rgba(145, 167, 255, .18);
+  background: rgba(145, 167, 255, .035);
+}
+
+.secondary-action:hover {
+  border-color: rgba(145, 167, 255, .34);
+  background: rgba(145, 167, 255, .075);
+}
+
+.capability-card {
+  border-color: rgba(247, 237, 220, .095);
+  background:
+    linear-gradient(150deg, rgba(62, 35, 70, .34), rgba(20, 13, 23, .25));
+}
+
+.capability-card:nth-child(2n) {
+  background:
+    linear-gradient(150deg, rgba(33, 47, 72, .26), rgba(20, 13, 23, .22));
+}
+
+.capability-icon {
+  color: var(--oxide);
+  border-color: rgba(67, 199, 173, .23);
+  background: rgba(67, 199, 173, .055);
+}
+
+.console-shell {
+  border-color: rgba(247, 237, 220, .11);
+  background:
+    linear-gradient(180deg, rgba(34, 21, 39, .93), rgba(19, 13, 23, .96));
+  box-shadow: 0 32px 100px rgba(7, 3, 10, .42);
+}
+
+.target-card {
+  border-color: rgba(145, 167, 255, .14);
+  background: rgba(145, 167, 255, .035);
+}
+
+.policy-chip {
+  color: var(--periwinkle);
+  border-color: rgba(145, 167, 255, .2);
+  background: rgba(145, 167, 255, .055);
+}
+
+.empty-orbit {
+  color: var(--acid);
+  border-color: rgba(231, 255, 93, .24);
+  background:
+    radial-gradient(circle at center, rgba(231, 255, 93, .11), rgba(255, 107, 74, .025));
+  box-shadow: none;
+}
+
+.progress-track i {
+  background:
+    linear-gradient(90deg, var(--vermilion), var(--acid), var(--oxide));
+}
+
+.pulse-dot.active {
+  background: var(--acid);
+  box-shadow: 0 0 0 5px rgba(231, 255, 93, .055);
+}
+
+.decision-banner {
+  border-color: rgba(67, 199, 173, .22);
+  background:
+    linear-gradient(90deg, rgba(67, 199, 173, .085), rgba(145, 167, 255, .035));
+}
+
+.decision-banner strong {
+  color: var(--oxide);
+}
+
+.candidate-card {
+  border-color: rgba(247, 237, 220, .09);
+  background: rgba(247, 237, 220, .018);
+}
+
+.candidate-card:nth-child(1) {
+  border-top-color: rgba(67, 199, 173, .28);
+}
+
+.candidate-card:nth-child(2) {
+  border-top-color: rgba(145, 167, 255, .34);
+}
+
+.candidate-card:nth-child(3) {
+  border-top-color: rgba(255, 107, 74, .32);
+}
+
+.candidate-card:hover,
+.candidate-card.selected {
+  border-color: rgba(231, 255, 93, .32);
+  background:
+    linear-gradient(145deg, rgba(231, 255, 93, .045), rgba(145, 167, 255, .03));
+  transform: translateY(-2px);
+}
+
+.verdict-merge {
+  color: var(--oxide);
+  background: rgba(67, 199, 173, .10);
+}
+
+.verdict-work {
+  color: var(--acid);
+  background: rgba(231, 255, 93, .085);
+}
+
+.verdict-reject {
+  color: var(--vermilion);
+  background: rgba(255, 107, 74, .095);
+}
+
+.score-row strong {
+  color: var(--parchment);
+}
+
+.branch-chip {
+  color: var(--periwinkle);
+  border-color: rgba(145, 167, 255, .18);
+  background: rgba(145, 167, 255, .055);
+}
+
+.reason-box {
+  border-color: rgba(255, 107, 74, .12);
+  background: rgba(255, 107, 74, .025);
+}
+
+.gate-icon {
+  border-color: rgba(145, 167, 255, .14);
+  color: #c9d3ff;
+  background: rgba(145, 167, 255, .025);
+}
+
+.status-icon.pass {
+  color: var(--oxide);
+}
+
+.status-icon.warn {
+  color: var(--acid);
+}
+
+.status-icon.fail {
+  color: var(--vermilion);
+}
+
+.flow-node {
+  background: rgba(247, 237, 220, .018);
+}
+
+.flow-node:nth-child(1) {
+  border-top-color: rgba(255, 107, 74, .3);
+}
+
+.flow-node.accent {
+  border-color: rgba(145, 167, 255, .28);
+  background:
+    linear-gradient(145deg, rgba(145, 167, 255, .08), rgba(67, 199, 173, .025));
+}
+
+.flow-node:nth-child(5) {
+  border-top-color: rgba(231, 255, 93, .32);
+}
+
+.flow-arrow {
+  color: #78698a;
+}
+
+::selection {
+  color: #160d18;
+  background: var(--acid);
+}
