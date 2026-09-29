@@ -11,33 +11,28 @@ import type {
 } from './types';
 
 export class ArcheagentOrchestrator {
-  private sequence = 0;
-
   constructor(
     private readonly registry: AgentRegistry,
     private readonly adapter: AgentAdapter,
     private readonly adaptiveRouter?: AdaptiveAgentRouter,
   ) {}
 
-  private event(
-    missionId: string,
-    type: OrchestratorEvent['type'],
-    detail: string,
-    extra: Pick<OrchestratorEvent, 'taskId' | 'agentId'> = {},
-  ): OrchestratorEvent {
-    this.sequence += 1;
-    return {
-      sequence: this.sequence,
-      missionId,
+  async run(mission: Mission): Promise<MissionResult> {
+    let sequence = 0;
+    const event = (
+      type: OrchestratorEvent['type'],
+      detail: string,
+      extra: Pick<OrchestratorEvent, 'taskId' | 'agentId'> = {},
+    ): OrchestratorEvent => ({
+      sequence: ++sequence,
+      missionId: mission.id,
       type,
       detail,
       taskId: extra.taskId,
       agentId: extra.agentId,
       at: new Date().toISOString(),
-    };
-  }
+    });
 
-  async run(mission: Mission): Promise<MissionResult> {
     const graph = new TaskGraph(mission.tasks);
     const evidence = new EvidenceGraph();
     const executions = [];
@@ -49,8 +44,7 @@ export class ArcheagentOrchestrator {
     let approvalRequired = false;
 
     events.push(
-      this.event(
-        mission.id,
+      event(
         'mission.started',
         'mission accepted by Archeagent control plane',
       ),
@@ -62,8 +56,7 @@ export class ArcheagentOrchestrator {
       if (task.dependsOn.some((dependency) => failed.has(dependency))) {
         failed.add(task.id);
         events.push(
-          this.event(
-            mission.id,
+          event(
             'task.failed',
             'dependency failed, task was not scheduled',
             { taskId: task.id },
@@ -73,7 +66,7 @@ export class ArcheagentOrchestrator {
       }
 
       events.push(
-        this.event(mission.id, 'task.ready', 'task dependencies satisfied', {
+        event('task.ready', 'task dependencies satisfied', {
           taskId: task.id,
         }),
       );
@@ -95,8 +88,7 @@ export class ArcheagentOrchestrator {
         if (!agent) {
           failed.add(task.id);
           events.push(
-            this.event(
-              mission.id,
+            event(
               'task.failed',
               'no eligible agent fits capability and budget constraints',
               { taskId: task.id },
@@ -116,8 +108,7 @@ export class ArcheagentOrchestrator {
         if (!policy.allowed) {
           failed.add(task.id);
           events.push(
-            this.event(
-              mission.id,
+            event(
               spentUsd >= mission.budgetUsd
                 ? 'budget.exhausted'
                 : 'task.failed',
@@ -131,8 +122,7 @@ export class ArcheagentOrchestrator {
         if (policy.requiresHumanApproval) {
           approvalRequired = true;
           events.push(
-            this.event(
-              mission.id,
+            event(
               'approval.required',
               policy.reasons.join('; '),
               { taskId: task.id, agentId: agent.id },
@@ -144,8 +134,7 @@ export class ArcheagentOrchestrator {
         attempts.set(task.id, attempt);
 
         events.push(
-          this.event(
-            mission.id,
+          event(
             'task.assigned',
             adaptiveDecision
               ? 'task routed by contextual production trust, capability, cost and latency'
@@ -178,8 +167,7 @@ export class ArcheagentOrchestrator {
           completed.add(task.id);
           taskPassed = true;
           events.push(
-            this.event(
-              mission.id,
+            event(
               'task.completed',
               execution.summary,
               { taskId: task.id, agentId: agent.id },
@@ -190,8 +178,7 @@ export class ArcheagentOrchestrator {
 
         if (attempt < task.maxAttempts) {
           events.push(
-            this.event(
-              mission.id,
+            event(
               'task.retry',
               'task failed evidence checks and will be retried',
               { taskId: task.id, agentId: agent.id },
@@ -202,8 +189,7 @@ export class ArcheagentOrchestrator {
 
         failed.add(task.id);
         events.push(
-          this.event(
-            mission.id,
+          event(
             'task.failed',
             'task exhausted retry budget',
             { taskId: task.id, agentId: agent.id },
@@ -222,8 +208,7 @@ export class ArcheagentOrchestrator {
           : 'completed';
 
     events.push(
-      this.event(
-        mission.id,
+      event(
         failed.size > 0 ? 'mission.failed' : 'mission.completed',
         failed.size > 0
           ? 'one or more tasks failed release policy'

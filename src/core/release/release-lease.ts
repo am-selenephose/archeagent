@@ -39,7 +39,7 @@ export type LeaseVerificationContext = {
 
 export interface ReplayStore {
   has(leaseId: string): Promise<boolean>;
-  consume(leaseId: string): Promise<void>;
+  consumeIfUnused(leaseId: string): Promise<boolean>;
 }
 
 function canonicalJson(claims: ReleaseLeaseClaims) {
@@ -143,6 +143,14 @@ export async function consumeReleaseLease(
   );
 
   if (!result.valid) return result;
-  await replayStore.consume(lease.claims.leaseId);
+
+  const consumed = await replayStore.consumeIfUnused(lease.claims.leaseId);
+  if (!consumed) {
+    return {
+      valid: false,
+      reasons: ['lease replay detected'],
+    };
+  }
+
   return result;
 }

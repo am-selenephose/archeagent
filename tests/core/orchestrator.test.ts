@@ -63,3 +63,48 @@ describe('ArcheagentOrchestrator', () => {
     expect(result.events.some((event) => event.type === 'mission.completed')).toBe(true);
   });
 });
+
+it('starts every mission event stream at sequence 1', async () => {
+  const registry = new AgentRegistry();
+  registry.register({
+    id: 'generalist-seq',
+    name: 'Generalist Seq',
+    provider: 'test',
+    model: 'test-model',
+    capabilities: ['architecture'],
+    trustScore: 0.95,
+    costPerTaskUsd: 0.1,
+    expectedLatencyMs: 1000,
+    maxConcurrency: 1,
+  });
+
+  const orchestrator = new ArcheagentOrchestrator(
+    registry,
+    new MockAgentAdapter(),
+  );
+
+  const mission = (id: string): Mission => ({
+    id,
+    repository: 'demo/repo',
+    objective: 'sequence isolation',
+    budgetUsd: 1,
+    tasks: [
+      {
+        id: 'plan',
+        title: 'Plan',
+        description: 'Plan',
+        requires: ['architecture'],
+        dependsOn: [],
+        risk: 'low',
+        maxAttempts: 1,
+      },
+    ],
+  });
+
+  const first = await orchestrator.run(mission('mission-seq-a'));
+  const second = await orchestrator.run(mission('mission-seq-b'));
+
+  expect(first.events[0]?.sequence).toBe(1);
+  expect(second.events[0]?.sequence).toBe(1);
+  expect(second.events.at(-1)?.sequence).toBe(second.events.length);
+});

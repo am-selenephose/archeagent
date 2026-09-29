@@ -140,22 +140,31 @@ export class MissionStream {
     await this.redis.xack(STREAM, GROUP, streamId);
   }
 
+  async deadLetter(
+    item: ClaimedMission,
+    reason: string,
+    attempt = item.envelope.attempt,
+  ) {
+    await this.redis.xadd(
+      DEAD_LETTER_STREAM,
+      '*',
+      'payload',
+      JSON.stringify({
+        ...item.envelope,
+        attempt,
+        failedAt: new Date().toISOString(),
+        reason,
+        sourceStreamId: item.streamId,
+      }),
+    );
+    await this.ack(item.streamId);
+  }
+
   async retry(item: ClaimedMission, reason: string, maxAttempts = 3) {
     const nextAttempt = item.envelope.attempt + 1;
 
     if (nextAttempt >= maxAttempts) {
-      await this.redis.xadd(
-        DEAD_LETTER_STREAM,
-        '*',
-        'payload',
-        JSON.stringify({
-          ...item.envelope,
-          attempt: nextAttempt,
-          failedAt: new Date().toISOString(),
-          reason,
-        }),
-      );
-      await this.ack(item.streamId);
+      await this.deadLetter(item, reason, nextAttempt);
       return { deadLettered: true };
     }
 

@@ -1,10 +1,10 @@
 # Archeagent
 
-**Outcome-grounded engineering control plane for coding-agent teams**
+**Empirical engineering labor market and release-control plane for coding-agent teams**
 
-Coding agents can write code. Archeagent learns which engineering agents should do which work, verifies their output, and binds release authority to exact evidence.
+Coding agents can write code. Archeagent learns who should implement, who should review, how much authority each worker has earned, what verification depth a change requires, and whether that work survived production.
 
-Archeagent compares competing AI-generated patches against deterministic release gates and produces an auditable decision: `MERGE`, `NEEDS_WORK` or `REJECT`.
+Archeagent treats models and agents as an evolving engineering workforce. It combines contextual labor intelligence, independent verification, production feedback, and exact-state release authorization to make auditable engineering decisions.
 
 ## Why this exists
 
@@ -40,14 +40,17 @@ Only the third patch receives `MERGE`.
 - deterministic evaluator API
 - responsive production-style dashboard
 
-Planned production adapters:
+Implemented prototype infrastructure:
 
-- PostgreSQL event and execution persistence
-- Redis Streams with consumer groups, retry, reclaim, and dead-letter handling
-- OpenTelemetry tracing
-- Go sandbox execution service
-- contextual trust routing
-- proof-carrying release authorization
+- PostgreSQL mission, event, execution, trust, outcome, and lease persistence
+- Redis Streams with consumer groups, retry, reclaim, dead-letter handling, and duplicate suppression
+- fenced durable mission workers with lease renewal and stale-worker rejection
+- OpenTelemetry tracing hooks
+- Go Docker execution boundary with explicit isolation limits
+- contextual trust routing and reviewer pairing
+- Ed25519 proof-carrying release authorization
+- atomic PostgreSQL replay consumption for one-time release leases
+- TLA+ release-authority model with negative control
 
 ## Run locally
 
@@ -131,11 +134,12 @@ This benchmark validates routing mechanics only. It is not evidence of real-mode
 
 pnpm verify runs:
 
-- 13 TypeScript test files;
-- 22 TypeScript tests;
+- 18 TypeScript test files;
+- 47 TypeScript tests;
 - ESLint;
 - Next.js production build;
 - Go executor tests;
+- TLA+ release-authority verification with negative control;
 - deterministic routing benchmark.
 
 ## Claim boundary
