@@ -9,15 +9,16 @@ A benchmark result is only useful if the coding agent cannot inspect its hidden 
 The v2 harness therefore enforces:
 
 1. each task pins a repository and base commit;
-2. the agent sees only the issue prompt and normal repository state;
-3. hidden evaluator files do not exist in the worktree while the agent is running;
-4. hidden evaluator files are injected only after the agent process exits;
-5. evaluator commands are argv arrays executed with shell=false;
-6. evaluator paths may not escape the worktree or overwrite agent-visible repository content;
-7. the produced patch is captured before evaluator injection;
-8. agent executable identity is fingerprinted from id, argv, environment-variable names and metadata;
-9. the append-only ledger keeps every attempt;
-10. published primary metrics use the first recorded task+agent attempt, not a later retry.
+2. deterministic setup commands run before the agent and must leave tracked repository state clean;
+3. the agent sees only the issue prompt and normal repository state;
+4. hidden evaluator files do not exist in the worktree while the agent is running;
+5. hidden evaluator files are injected only after the agent process exits;
+6. evaluator commands are argv arrays executed with shell=false;
+7. evaluator paths may not escape the worktree or overwrite agent-visible repository content;
+8. the produced patch is captured before evaluator injection;
+9. agent executable identity is fingerprinted from id, argv, environment-variable names and metadata;
+10. the append-only ledger keeps every attempt;
+11. published primary metrics use the first recorded task+agent attempt, not a later retry.
 
 ## Dataset format
 
@@ -29,6 +30,12 @@ One JSON object per line:
   "repo": "django/django",
   "baseCommit": "<40-char-sha>",
   "prompt": "<issue text>",
+  "setup": {
+    "commands": [
+      ["pnpm", "install", "--frozen-lockfile"]
+    ],
+    "timeoutMs": 600000
+  },
   "evaluator": {
     "commands": [
       ["python", "-m", "pytest", "-q", "hidden/test_regression.py"]
@@ -46,6 +53,8 @@ One JSON object per line:
   }
 }
 ~~~
+
+Setup commands are agent-visible environment preparation. If setup changes tracked files or creates untracked non-ignored files, the task fails before the agent runs.
 
 Evaluator files are benchmark-authority material. They are loaded by the harness but not placed in the repository until after the agent exits.
 

@@ -57,6 +57,7 @@ describe('provider benchmark harness', () => {
       '--',
       'retry.hidden.test.ts',
     ]);
+    expect(tasks[0]!.setup.commands).toEqual([]);
   });
 
   it('rejects shell command strings for evaluator execution', () => {
@@ -71,6 +72,21 @@ describe('provider benchmark harness', () => {
         },
       })),
     ).toThrow(/argv/i);
+  });
+
+  it('rejects shell command strings for setup execution', () => {
+    expect(() =>
+      parseTaskDataset(JSON.stringify({
+        id: 'one',
+        repo: 'owner/repo-a',
+        baseCommit: 'abc123',
+        prompt: 'Fix the retry bug.',
+        setup: { commands: ['pnpm install'] },
+        evaluator: {
+          commands: [['node', 'hidden/check.mjs']],
+        },
+      })),
+    ).toThrow(/setup command.*argv/i);
   });
 
   it('rejects evaluator file paths that escape the worktree', () => {
@@ -166,6 +182,9 @@ describe('provider benchmark harness', () => {
         repoUrl: sourceRepo,
         baseCommit: commit,
         prompt: 'Change answer.txt to good.',
+        setup: {
+          commands: [['node', '--version']],
+        },
         evaluator: {
           commands: [['node', 'hidden/check.mjs']],
           files: [{
@@ -186,8 +205,66 @@ describe('provider benchmark harness', () => {
 
       expect(record.passed).toBe(true);
       expect(record.changed).toBe(true);
+      expect(record.setupRuns).toHaveLength(1);
+      expect(record.setupRuns[0]!.exitCode).toBe(0);
       expect(record.evaluatorRuns).toHaveLength(1);
       expect(record.evaluatorRuns[0]!.exitCode).toBe(0);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('fails when setup mutates tracked repository state', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'archeagent-setup-drift-'));
+    const sourceRepo = join(fixture, 'source');
+    const setupScript = join(fixture, 'setup.mjs');
+
+    try {
+      await exec(['git', 'init', '--quiet', sourceRepo], fixture);
+      await exec(['git', 'config', 'user.email', 'benchmark@example.invalid'], sourceRepo);
+      await exec(['git', 'config', 'user.name', 'Benchmark Fixture'], sourceRepo);
+      await writeFile(join(sourceRepo, 'answer.txt'), 'original\n', 'utf8');
+      await exec(['git', 'add', '.'], sourceRepo);
+      await exec(['git', 'commit', '--quiet', '-m', 'fixture'], sourceRepo);
+
+      const commit = await new Promise<string>((resolve, reject) => {
+        const child = spawn('git', ['rev-parse', 'HEAD'], {
+          cwd: sourceRepo,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          shell: false,
+        });
+        let stdout = '';
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => { stdout += chunk; });
+        child.on('error', reject);
+        child.on('close', (code) =>
+          code === 0 ? resolve(stdout.trim()) : reject(new Error('rev-parse failed')),
+        );
+      });
+
+      await writeFile(
+        setupScript,
+        "import { writeFileSync } from 'node:fs';\nwriteFileSync('answer.txt', 'setup-mutated\\n');\n",
+        'utf8',
+      );
+
+      const task = parseTaskDataset(JSON.stringify({
+        id: 'setup-drift',
+        repo: 'fixture/local',
+        repoUrl: sourceRepo,
+        baseCommit: commit,
+        prompt: 'No-op.',
+        setup: { commands: [['node', setupScript]] },
+        evaluator: { commands: [['node', '--version']] },
+      }))[0]!;
+
+      const [agent] = validateAgentMatrix([
+        { id: 'fixture-agent', argv: ['node', '--version'] },
+      ]);
+
+      await expect(runBenchmarkTask(task, agent!)).rejects.toThrow(
+        /setup modified tracked repository state/i,
+      );
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }

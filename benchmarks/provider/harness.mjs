@@ -75,6 +75,13 @@ function normalizeTask(raw) {
     ? evaluator.files.map(normalizeEvaluatorFile)
     : [];
 
+  const setup = raw.setup && typeof raw.setup === 'object' ? raw.setup : {};
+  const setupCommands = Array.isArray(setup.commands)
+    ? setup.commands.map((command, index) =>
+        normalizeArgv(command, 'setup command ' + index),
+      )
+    : [];
+
   return {
     id: assertNonEmptyString(raw.id, 'task id'),
     repo: assertNonEmptyString(raw.repo, 'task repo'),
@@ -83,6 +90,13 @@ function normalizeTask(raw) {
       : null,
     baseCommit: assertNonEmptyString(raw.baseCommit, 'task baseCommit'),
     prompt: assertNonEmptyString(raw.prompt, 'task prompt'),
+    setup: {
+      commands: setupCommands,
+      timeoutMs:
+        Number.isFinite(setup.timeoutMs) && setup.timeoutMs > 0
+          ? setup.timeoutMs
+          : 600000,
+    },
     evaluator: {
       commands,
       files,
@@ -345,6 +359,46 @@ export async function runBenchmarkTask(task, agent) {
       throw new Error('benchmark workspace is not clean before agent run');
     }
 
+    const setupRuns = [];
+    for (const command of task.setup.commands) {
+      const result = await runProcess(command, {
+        cwd: repoDir,
+        timeoutMs: task.setup.timeoutMs,
+      });
+      setupRuns.push({
+        commandHash: await hashText(JSON.stringify(command)),
+        exitCode: result.exitCode,
+        timedOut: result.timedOut,
+        durationMs: result.durationMs,
+        stderrTail: result.stderr.slice(-2000),
+      });
+
+      if (result.exitCode !== 0 || result.timedOut) {
+        throw new Error(
+          'benchmark setup command failed: ' +
+            command[0] +
+            ' exit=' +
+            String(result.exitCode) +
+            ' timedOut=' +
+            String(result.timedOut),
+        );
+      }
+    }
+
+    const postSetupStatus = await runProcess([
+      'git',
+      '-C',
+      repoDir,
+      'status',
+      '--porcelain',
+    ]);
+    if (postSetupStatus.stdout.trim() !== '') {
+      throw new Error(
+        'setup modified tracked repository state or created untracked files: ' +
+          postSetupStatus.stdout.trim(),
+      );
+    }
+
     const agentPrompt = [
       task.prompt,
       '',
@@ -403,6 +457,7 @@ export async function runBenchmarkTask(task, agent) {
       baseCommit: task.baseCommit,
       agentId: agent.id,
       agentFingerprint: agent.fingerprint,
+      setupRuns,
       passed,
       changed,
       agentExitCode: agentRun.exitCode,
