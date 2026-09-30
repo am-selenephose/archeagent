@@ -1,0 +1,22 @@
+[
+  {
+    "id": "codex",
+    "argv": ["codex", "exec", "-"],
+    "timeoutMs": 900000
+  },
+  {
+    "id": "claude",
+    "argv": ["claude", "-p"],
+    "timeoutMs": 900000
+  },
+  {
+    "id": "gemini",
+    "argv": ["gemini"],
+    "timeoutMs": 900000
+  },
+  {
+    "id": "local",
+    "argv": ["your-local-agent", "--stdin"],
+    "timeoutMs": 900000
+  }
+]

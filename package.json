@@ -9,9 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "verify": "pnpm test && pnpm lint && pnpm build && cd services/executor-go && go test ./... && cd ../.. && pnpm verify:formal && pnpm benchmark:routing",
+    "verify": "pnpm test && pnpm lint && pnpm build && cd services/executor-go && go test ./... && cd ../.. && pnpm verify:formal && pnpm benchmark:provider:validate && pnpm benchmark:routing",
     "benchmark:routing": "node benchmarks/contextual-routing.mjs",
-    "verify:formal": "bash formal/verify.sh"
+    "verify:formal": "bash formal/verify.sh",
+    "benchmark:provider:validate": "node benchmarks/provider/validate.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",

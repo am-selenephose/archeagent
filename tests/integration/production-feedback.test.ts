@@ -30,7 +30,16 @@ function rollbackObservation(): DeploymentObservation {
     newSecurityFinding: false,
     regressionDetected: false,
     reviewerReversal: false,
-    attributionConfidence: 1,
+    attributionEvidence: {
+      deploymentPatchSha: "patch-rollback-1",
+      rollbackPatchSha: "patch-rollback-1",
+      touchedFiles: ["src/billing.ts"],
+      incidentFiles: ["src/billing.ts"],
+      errorIntroducedAfterDeployment: true,
+      rollbackResolvedSignal: true,
+      canaryAffected: true,
+      featureFlagMatched: true,
+    },
   };
 }
 
@@ -64,7 +73,16 @@ describe("ProductionFeedbackService", () => {
     const result = await service.record({
       ...rollbackObservation(),
       patchSha: "patch-low-confidence",
-      attributionConfidence: 0.4,
+      attributionEvidence: {
+        deploymentPatchSha: "different-patch",
+        rollbackPatchSha: "different-patch",
+        touchedFiles: ["src/billing.ts"],
+        incidentFiles: ["src/unrelated.ts"],
+        errorIntroducedAfterDeployment: false,
+        rollbackResolvedSignal: false,
+        canaryAffected: false,
+        featureFlagMatched: false,
+      },
     });
     expect(result).toMatchObject({ accepted: false });
     expect(await store.loadTrustObservations()).toEqual([]);

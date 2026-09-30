@@ -10,8 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { EvaluationConsole } from "@/components/evaluation-console";
-import { IntelligenceConsole } from "@/components/intelligence-console";
+import { LifecycleConsole } from "@/components/lifecycle-console";
 import formalReceipt from "../../formal/receipts/release-authority-summary.json";
 import { assertFormalReceiptFresh } from "@/core/formal-receipt";
 
@@ -95,7 +94,7 @@ export default function Home() {
         ))}
       </section>
 
-      <IntelligenceConsole />
+      <LifecycleConsole />
 
       <section className="formal-receipt">
         <div>
@@ -115,25 +114,24 @@ export default function Home() {
         </div>
       </section>
 
-      <EvaluationConsole />
 
       <section className="architecture-section" id="architecture">
         <div className="architecture-copy">
           <p className="eyebrow">Architecture</p>
-          <h2>Velocity on one side. Verification on the other.</h2>
+          <h2>The workforce learns from what survives production.</h2>
           <p>
-            Archeagent treats model output as an untrusted proposal. Each candidate
-            moves through a deterministic evaluator before a release decision is
-            produced.
+            Routing, review, execution, evidence, release authority and production
+            attribution are one closed loop. Every accepted outcome becomes evidence
+            for the next engineering decision.
           </p>
         </div>
 
         <div className="architecture-flow">
-          <div className="flow-node"><span>01</span><strong>Candidate agents</strong><small>Parallel worktrees and patch manifests</small></div>
+          <div className="flow-node"><span>01</span><strong>Learned team</strong><small>Success probability, utility and reviewer complement</small></div>
           <ArrowRight className="flow-arrow" />
-          <div className="flow-node accent"><span>02</span><strong>Evidence engine</strong><small>Tests, contracts, security, migrations, perf</small></div>
+          <div className="flow-node accent"><span>02</span><strong>Proof chain</strong><small>Execution, evidence, policy, formal checks and signed lease</small></div>
           <ArrowRight className="flow-arrow" />
-          <div className="flow-node"><span>03</span><strong>Human gate</strong><small>MERGE, NEEDS_WORK or REJECT with proof</small></div>
+          <div className="flow-node"><span>03</span><strong>Production learning</strong><small>Evidence-derived attribution mutates contextual trust</small></div>
         </div>
       </section>
 

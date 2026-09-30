@@ -10,6 +10,11 @@ import {
   type TrustContext,
 } from '@/core/intelligence/contextual-trust';
 import { ReviewerPairingMatrix } from '@/core/intelligence/reviewer-pairing';
+import {
+  assessAttribution,
+  classifyDeploymentOutcome,
+  type DeploymentObservation,
+} from '@/core/intelligence/production-outcome';
 import { assignTournament } from '@/core/intelligence/shadow-tournament';
 import { evidenceMerkleRoot } from '@/core/release/evidence-root';
 import {
@@ -167,8 +172,24 @@ export async function GET() {
       failureClass: 'authorization',
       defectPresent: true,
       reviewerCaughtDefect: i < 7,
+      context,
+    });
+    pairing.observe({
+      implementerId: 'velocity',
+      reviewerId: 'atlas',
+      failureClass: 'authorization',
+      defectPresent: true,
+      reviewerCaughtDefect: i < 4,
+      context,
     });
   }
+
+  const reviewerCandidates = pairing.rankReviewers(
+    'velocity',
+    ['sentry', 'atlas'],
+    'authorization',
+    context,
+  );
 
   const selected = routing.agent;
   const selectedTrust = selected
@@ -195,6 +216,31 @@ export async function GET() {
     formalSpecAvailable: false,
     reviewerMinutesBudget: 35,
   });
+
+  const productionObservation: DeploymentObservation = {
+    agentId: selected?.id ?? 'velocity',
+    context,
+    patchSha: 'patch-41ac990',
+    deployedAt: '2026-09-27T00:02:00Z',
+    observedUntil: '2026-09-27T00:08:00Z',
+    rollback: false,
+    hotfix: false,
+    newSecurityFinding: false,
+    regressionDetected: false,
+    reviewerReversal: false,
+    attributionEvidence: {
+      deploymentPatchSha: 'patch-41ac990',
+      touchedFiles: ['src/auth/authorization.ts'],
+      incidentFiles: ['src/auth/authorization.ts'],
+      errorIntroducedAfterDeployment: true,
+      canaryAffected: true,
+      featureFlagMatched: true,
+      traceCorrelation: 0.92,
+      codeOwnershipMatch: true,
+    },
+  };
+  const productionAttribution = assessAttribution(productionObservation);
+  const productionOutcome = classifyDeploymentOutcome(productionObservation);
 
   const evidenceHashes = [
     'a'.repeat(64),
@@ -256,11 +302,10 @@ export async function GET() {
       shadows: tournament.shadows.map((agent) => agent.id),
       reason: tournament.reason,
     },
-    reviewerPairing: pairing.score(
-      'velocity',
-      'sentry',
-      'authorization',
-    ),
+    reviewerPairing: reviewerCandidates[0],
+    reviewerCandidates,
+    productionAttribution,
+    productionOutcome,
     authority,
     verification,
     release: {

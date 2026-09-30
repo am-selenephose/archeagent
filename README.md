@@ -8,7 +8,7 @@ Archeagent treats models and agents as an evolving engineering workforce. It com
 
 ## Why this exists
 
-AI coding tools make implementation dramatically faster, but speed creates a new engineering bottleneck: verification.
+AI coding tools make implementation dramatically faster, but speed creates a new engineering bottleneck: verification and labor allocation.
 
 A plausible patch can still:
 
@@ -16,19 +16,26 @@ A plausible patch can still:
 - preserve types while breaking an API contract;
 - compile while weakening an authorization boundary;
 - depend on a schema change that was never migrated;
+- come from the wrong worker for this repository and failure class;
 - claim success without reproducible evidence.
 
-Archeagent treats agent output as an untrusted proposal and makes release evidence first-class.
+Archeagent treats agent output as an untrusted proposal. It measures workers from observed outcomes, composes teams from contextual evidence, and makes release evidence first-class.
 
-## Live demo scenario
+## Product loop
 
-The included demo evaluates three patches for the same production bug:
+The demo is one continuous engineering lifecycle:
 
-1. **FastFix** is quick, but fails persistent retry and security boundaries.
-2. **SmartPatch** passes tests, but forgets the deployable database migration.
-3. **VerifiedPatch** passes tests, contracts, security, migration, performance and evidence gates.
+1. mission context enters the system;
+2. eligible workers are scored by learned contextual success probability and explicit expected utility;
+3. a primary implementer and counterfactual shadow workers are selected;
+4. reviewer complementarity is estimated against the implementer's observed blind spots;
+5. candidate patches are independently evaluated;
+6. evidence, policy and verification-depth gates are applied;
+7. an Ed25519 release lease binds authorization to the exact code and evidence state;
+8. deployment evidence is used to derive attribution confidence;
+9. sufficiently attributed production outcomes update contextual trust for future routing.
 
-Only the third patch receives `MERGE`.
+The core idea is not "more agents". It is an empirical labor market whose routing policy changes when workers prove or disprove themselves.
 
 ## Stack
 
@@ -37,74 +44,118 @@ Only the third patch receives `MERGE`.
 - TypeScript
 - Zod
 - Vitest
-- deterministic evaluator API
-- responsive production-style dashboard
+- PostgreSQL
+- Redis Streams
+- OpenTelemetry
+- Go execution boundary
+- TLA+ release-authority model
 
 Implemented prototype infrastructure:
 
-- PostgreSQL mission, event, execution, trust, outcome, and lease persistence
+- PostgreSQL mission, event, execution, trust, production-outcome, and lease persistence
 - Redis Streams with consumer groups, retry, reclaim, dead-letter handling, and duplicate suppression
 - fenced durable mission workers with lease renewal and stale-worker rejection
-- OpenTelemetry tracing hooks
-- Go Docker execution boundary with explicit isolation limits
-- contextual trust routing and reviewer pairing
+- contextual Bayesian trust graph conditioned on repository, language, framework, task class, and risk
+- learned success-probability routing with explicit expected-utility economics
+- contextual implementer-reviewer complementarity learning
+- counterfactual shadow tournaments
+- evidence-derived post-deployment attribution
+- calibrated authority ladder and risk-adaptive verification escalation
+- SHA-256 evidence Merkle roots
 - Ed25519 proof-carrying release authorization
 - atomic PostgreSQL replay consumption for one-time release leases
-- TLA+ release-authority model with negative control
+- TLA+ release-authority model with a deliberately unsafe negative control
+- provider-backed benchmark harness with hidden evaluators and an append-only living results ledger
+- Go Docker execution boundary with explicit isolation limits
+- OpenTelemetry tracing hooks
 
 ## Run locally
 
-```bash
+~~~bash
 pnpm install
-pnpm test
 pnpm dev
-```
+~~~
 
-Open `http://localhost:3000`.
+Open http://localhost:3000.
 
-## Verify
+For the full integration suite, provide isolated PostgreSQL and Redis endpoints:
 
-```bash
-pnpm test
-pnpm lint
-pnpm build
-```
+~~~bash
+export ARCHEAGENT_TEST_DATABASE_URL='postgres://archeagent:archeagent@127.0.0.1:5432/archeagent'
+export ARCHEAGENT_TEST_REDIS_URL='redis://127.0.0.1:6379/15'
+pnpm verify
+~~~
+
+The checked-in Docker Compose file can provision the integration services.
 
 ## API
 
-### `GET /api/demo`
+### GET /api/intelligence/demo
 
-Returns a complete deterministic demonstration evaluation.
+Returns the end-to-end labor-intelligence demonstration: routing, shadow assignment, reviewer complementarity, authority, verification plan, release lease, and production attribution.
 
-### `POST /api/evaluate`
+### GET /api/demo
+
+Returns the independent deterministic candidate-patch evaluation used inside the lifecycle demo.
+
+### POST /api/evaluate
 
 Accepts a repository target and candidate patch evidence, validates it with Zod, and returns ranked candidate evaluations plus the release decision.
 
 ## Engineering principle
 
-**Evidence beats confidence. A plausible patch is not a safe patch.**
+**Do not trust the model. Trust the measured worker, the evidence, and the exact release state.**
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the production design.
+## Empirical labor intelligence
 
+Archeagent does not use one global "best model" score.
 
-## Contextual engineering intelligence
+For each eligible worker it estimates contextual success from outcome history. The context includes repository, language, framework, task class, and risk. Profile trust is only a cold-start prior when contextual evidence does not yet exist.
 
-Archeagent does not treat coding agents as interchangeable.
+Routing then optimizes explicit expected utility:
 
-The current implementation contains a Contextual Trust Graph conditioned on repository, language, framework, task class, and risk tier. A contextual router combines outcome history with capability, profile trust, cost, and latency.
+~~~text
+expected success value
+- expected failure cost
+- worker cost
+- latency cost
+~~~
 
-It also includes:
+Risk changes the economics. A cheap worker with weak production survival can therefore lose a critical task to a more expensive worker without relying on unexplained fixed route weights.
 
-- counterfactual shadow tournaments;
-- implementer-reviewer pairing intelligence;
-- post-deployment outcome classification;
-- a calibrated authority ladder from SHADOW to bounded execution;
-- risk-adaptive verification escalation;
-- SHA-256 evidence roots;
-- Ed25519 proof-carrying release leases;
-- exact base, patch, policy, evidence, environment, expiry, and replay checks.
+Reviewer selection follows the same empirical principle. Archeagent estimates:
 
-A release lease fails closed when the code or authority context drifts.
+~~~text
+P(reviewer catches defect | implementer, failure class, repository context)
+~~~
+
+The goal is not to pick the globally highest-rated reviewer. It is to cover this implementer's likely blind spots for this change.
+
+## Production attribution
+
+Production feedback only updates trust when independently observed evidence crosses an attribution threshold.
+
+Current signals include:
+
+- deployed patch SHA alignment;
+- rollback-to-patch alignment;
+- changed-file and incident-file overlap;
+- whether the failure signal appeared after deployment;
+- whether rollback removed the signal;
+- canary reproduction;
+- feature-flag cohort alignment;
+- runtime trace correlation;
+- subsystem ownership alignment.
+
+Caller-supplied confidence is retained only for wire compatibility and is not an authority input.
+
+This is evidence-derived attribution, not a claim of perfect causal inference.
+
+## Proof-carrying release authority
+
+A release lease binds authorization to repository, base SHA, patch SHA, policy hash, evidence Merkle root, environment, expiry, nonce, and lease identity.
+
+Base movement, patch mutation, policy drift, evidence drift, expiry, or replay invalidates authorization. Replay consumption is atomic in PostgreSQL so concurrent consumers cannot both spend the same lease.
 
 ## Execution plane
 
@@ -114,11 +165,9 @@ Docker is the current isolation boundary. Archeagent does not claim VM-grade iso
 
 ## Synthetic routing benchmark
 
-The deterministic synthetic fixture compares one static generic-agent route with contextual routing over held-out synthetic tasks.
+The checked-in deterministic benchmark validates contextual-routing mechanics over held-out synthetic tasks.
 
-Current checked-in receipt:
-
-benchmarks/results/contextual-routing-synthetic-v1.json
+Receipt: benchmarks/results/contextual-routing-synthetic-v1.json
 
 For seed 20260927:
 
@@ -128,22 +177,61 @@ For seed 20260927:
 - static average synthetic task cost: $0.6200;
 - contextual average synthetic task cost: $0.5825.
 
-This benchmark validates routing mechanics only. It is not evidence of real-model performance.
+This benchmark is not evidence of real-model performance.
+
+## Provider-backed benchmark harness
+
+benchmarks/provider/ contains the executable real-agent harness.
+
+A task pins a real repository and base commit. The coding agent receives the issue prompt but not the hidden evaluator commands. Archeagent captures the produced Git diff, runs independent evaluator commands afterward, hashes the patch, and appends the result to a JSONL living ledger.
+
+Example:
+
+~~~bash
+node benchmarks/provider/run.mjs \
+  --dataset=/secure/path/tasks.jsonl \
+  --agents=/secure/path/agents.json \
+  --count=100 \
+  --ledger=benchmarks/provider/results/living-benchmark.jsonl
+~~~
+
+The harness is implemented and locally validated. No real-provider performance claim is made until actual provider agents are run against an executable task corpus.
+
+See benchmarks/provider/README.md for the data contract.
 
 ## Current verification
 
-pnpm verify runs:
+The repository contains:
 
-- 18 TypeScript test files;
-- 47 TypeScript tests;
+- 22 TypeScript test files;
+- 54 TypeScript tests;
+- PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
 - Go executor tests;
 - TLA+ release-authority verification with negative control;
-- deterministic routing benchmark.
+- provider-benchmark harness validation;
+- deterministic synthetic routing benchmark.
+
+Run the complete gate with:
+
+~~~bash
+pnpm verify
+~~~
 
 ## Claim boundary
 
-Archeagent is an engineering prototype. It does not currently claim production-grade multi-tenant isolation, VM-grade sandboxing, real-provider routing gains, causal incident attribution, automatic high-risk merge authority, or universal formal verification.
+Archeagent is a research-engineering prototype.
 
-The next evidence stage is provider-backed evaluation on executable repository tasks with independent verification.
+It does not currently claim:
+
+- production-grade multi-tenant isolation;
+- VM-grade sandboxing;
+- measured routing gains across real commercial providers;
+- perfect causal incident attribution;
+- automatic high-risk merge authority;
+- universal formal verification.
+
+The next empirical stage is to run the provider harness across pinned executable repository tasks and publish reproducible provider-backed receipts rather than model self-reports.
+
+See docs/ARCHITECTURE.md and docs/RESEARCH_POSITIONING.md.
