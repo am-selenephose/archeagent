@@ -142,6 +142,89 @@ describe('SWE-Rebench importer', () => {
     ).toThrow(/test patch path/i);
   });
 
+  it('installs validated cache pip_packages without executing shell fragments', () => {
+    const task = convertSweRebenchRecord(source, {
+      ...cache,
+      install_config: {
+        ...cache.install_config,
+        pip_packages: ['pytest pytest-cov', 'pytest'],
+      },
+    });
+
+    const evaluator = task.evaluator.files.find((file) =>
+      file.path.endsWith('.evaluate.mjs'),
+    );
+    expect(evaluator?.content).toContain(
+      'const pipPackages = ["pytest","pytest-cov"];',
+    );
+    expect(evaluator?.content).toContain(
+      "python -m pip install -q 'pytest' 'pytest-cov'",
+    );
+    expect(task.metadata.pipPackages).toEqual(['pytest', 'pytest-cov']);
+  });
+
+  it('installs validated repository requirement files declared by the cache', () => {
+    const task = convertSweRebenchRecord(source, {
+      ...cache,
+      install_config: {
+        ...cache.install_config,
+        reqs_path: ['requirements/tests', 'requirements/docs'],
+      },
+    });
+
+    const evaluator = task.evaluator.files.find((file) =>
+      file.path.endsWith('.evaluate.mjs'),
+    );
+    expect(evaluator?.content).toContain(
+      'const requirementFiles = ["requirements/tests","requirements/docs"];',
+    );
+    expect(evaluator?.content).toContain(
+      "python -m pip install -q -r 'requirements/tests'",
+    );
+    expect(evaluator?.content).toContain(
+      "python -m pip install -q -r 'requirements/docs'",
+    );
+    expect(task.metadata.requirementFiles).toEqual([
+      'requirements/tests',
+      'requirements/docs',
+    ]);
+  });
+
+  it('rejects requirement files that escape the repository', () => {
+    expect(() =>
+      convertSweRebenchRecord(source, {
+        ...cache,
+        install_config: {
+          ...cache.install_config,
+          reqs_path: ['../outside.txt'],
+        },
+      }),
+    ).toThrow(/reqs_path/i);
+  });
+
+  it('rejects unsafe cache pip_packages tokens', () => {
+    expect(() =>
+      convertSweRebenchRecord(source, {
+        ...cache,
+        install_config: {
+          ...cache.install_config,
+          pip_packages: ['pytest --index-url=https://example.invalid/simple'],
+        },
+      }),
+    ).toThrow(/pip_packages/i);
+  });
+
+  it('normalizes harmless whitespace in the editable install declaration', () => {
+    const task = convertSweRebenchRecord(source, {
+      ...cache,
+      install_config: {
+        ...cache.install_config,
+        install: 'pip   install   -e   .[dev]',
+      },
+    });
+    expect(task.metadata.installSpec).toBe('.[dev]');
+  });
+
   it('rejects unsupported Python install commands instead of executing dataset shell', () => {
     expect(() =>
       convertSweRebenchRecord(source, {

@@ -78,7 +78,7 @@ function normalizeEditableInstall(cache) {
     cache.install_config?.install,
     'install_config.install',
   );
-  const normalized = install.replace(/\\s+/g, ' ').trim();
+  const normalized = install.replace(/\s+/g, ' ').trim();
 
   if (normalized === 'pip install -e .') return '.';
   if (normalized === 'pip install -e .[dev]') return '.[dev]';
@@ -88,12 +88,86 @@ function normalizeEditableInstall(cache) {
   );
 }
 
+function normalizeRequirementFiles(cache) {
+  const raw = cache.install_config?.reqs_path;
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) {
+    throw new Error('install_config.reqs_path must be an array');
+  }
+
+  return unique(
+    raw.map((entry) => {
+      if (typeof entry !== 'string' || entry.trim() === '') {
+        throw new Error(
+          'install_config.reqs_path entries must be non-empty strings',
+        );
+      }
+
+      const portable = entry.trim().replaceAll('\\', '/');
+      if (
+        portable.startsWith('/') ||
+        portable === '..' ||
+        portable.startsWith('../') ||
+        portable.includes('/../') ||
+        portable.includes('\0')
+      ) {
+        throw new Error(
+          'unsafe install_config.reqs_path entry: ' + entry,
+        );
+      }
+
+      if (!/^[A-Za-z0-9._/-]+$/.test(portable)) {
+        throw new Error(
+          'unsafe install_config.reqs_path entry: ' + entry,
+        );
+      }
+
+      return portable;
+    }),
+  );
+}
+
+function normalizePipPackages(cache) {
+  const raw = cache.install_config?.pip_packages;
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) {
+    throw new Error('install_config.pip_packages must be an array');
+  }
+
+  const requirementPattern =
+    /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[A-Za-z0-9._,-]+\])?(?:(?:===|==|!=|~=|>=|<=|>|<)[A-Za-z0-9.*+!_-]+)?$/;
+  const tokens = [];
+
+  for (const entry of raw) {
+    if (typeof entry !== 'string') {
+      throw new Error('install_config.pip_packages entries must be strings');
+    }
+
+    for (const token of entry.trim().split(/\s+/).filter(Boolean)) {
+      if (!requirementPattern.test(token)) {
+        throw new Error(
+          'unsafe install_config.pip_packages token: ' + token,
+        );
+      }
+      tokens.push(token);
+    }
+  }
+
+  return unique(tokens);
+}
+
+function quoteSafeRequirement(value) {
+  return "'" + value + "'";
+}
+
 function makePythonDockerEvaluator({
   hiddenPatchPath,
   baseCommit,
   testFiles,
   pythonVersion,
   packageSpec,
+  requirementFiles,
+  pipPackages,
   targets,
 }) {
   return [
@@ -120,6 +194,8 @@ function makePythonDockerEvaluator({
       JSON.stringify('python:' + pythonVersion + '-slim') +
       ';',
     'const packageSpec = ' + JSON.stringify(packageSpec) + ';',
+    'const requirementFiles = ' + JSON.stringify(requirementFiles) + ';',
+    'const pipPackages = ' + JSON.stringify(pipPackages) + ';',
     'const targets = ' + JSON.stringify(targets) + ';',
     '',
     "run(['git', 'checkout', baseCommit, '--', ...testFiles]);",
@@ -131,6 +207,22 @@ function makePythonDockerEvaluator({
     "  'apt-get update -qq',",
     "  'DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gcc git >/dev/null',",
     "  'python -m pip install -q --upgrade pip',",
+    ...requirementFiles.map(
+      (path) =>
+        '  ' +
+        JSON.stringify(
+          'python -m pip install -q -r ' + quoteSafeRequirement(path),
+        ) +
+        ',',
+    ),
+    pipPackages.length > 0
+      ? '  ' +
+        JSON.stringify(
+          'python -m pip install -q ' +
+            pipPackages.map(quoteSafeRequirement).join(' '),
+        ) +
+        ','
+      : "  ':',",
     "  'python -m pip install -q -e \"' + packageSpec + '\"',",
     "  'exec python -m pytest --no-header -rA --tb=line --color=no -p no:cacheprovider -W ignore::DeprecationWarning \"$@\"',",
     "].join(' && ');",
@@ -203,6 +295,8 @@ export function convertSweRebenchRecord(record, cache) {
   const targets = pythonEvaluatorTargets(cache);
   const pythonVersion = normalizePythonVersion(cache);
   const packageSpec = normalizeEditableInstall(cache);
+  const requirementFiles = normalizeRequirementFiles(cache);
+  const pipPackages = normalizePipPackages(cache);
 
   return {
     id,
@@ -227,6 +321,8 @@ export function convertSweRebenchRecord(record, cache) {
             testFiles,
             pythonVersion,
             packageSpec,
+            requirementFiles,
+            pipPackages,
             targets,
           }),
         },
@@ -239,6 +335,9 @@ export function convertSweRebenchRecord(record, cache) {
       instanceId: id,
       language: cache.language,
       python: pythonVersion,
+      installSpec: packageSpec,
+      requirementFiles,
+      pipPackages,
       evaluatorRuntime: 'docker',
       evaluatorImage: 'python:' + pythonVersion + '-slim',
       failToPass: Array.isArray(cache.FAIL_TO_PASS)

@@ -1,0 +1,34 @@
+{
+  "schema": "archeagent.swerebench-control-revalidation.v1",
+  "recordedDate": "2026-09-30",
+  "reason": "Importer gained validated reqs_path support after v1 pilot froze Falcon as INVALID_CONTROL.",
+  "task": {
+    "instanceId": "falconry__falcon-2254",
+    "repo": "falconry/falcon",
+    "baseCommit": "cbca63dc7739720eab856f48b32f9e782438be7a"
+  },
+  "importerRevision": "research/swerebench-pilot-corpus-v1",
+  "environment": {
+    "python": "3.9",
+    "requirementFiles": [
+      "requirements/docs",
+      "requirements/tests"
+    ],
+    "pipPackages": [
+      "pytest",
+      "pytest-asyncio"
+    ]
+  },
+  "controls": {
+    "negative": {
+      "exitCode": 1,
+      "expected": "FAIL"
+    },
+    "gold": {
+      "exitCode": 0,
+      "expected": "PASS"
+    }
+  },
+  "status": "VALID",
+  "historicalNote": "This does not alter the frozen swerebench-pilot-v1 score or its original INVALID_CONTROL status for Falcon. It only proves the later importer revision can evaluate the task faithfully."
+}

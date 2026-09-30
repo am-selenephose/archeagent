@@ -1,0 +1,58 @@
+{
+  "schema": "archeagent.swerebench-pilot-summary.v1",
+  "corpus": "swerebench-pilot-v1",
+  "frozenAt": "2026-09-30",
+  "model": {
+    "id": "qwen2.5-14b-am-swerebench-pilot-v1",
+    "provider": "local-llama.cpp",
+    "model": "qwen2.5-14b-am"
+  },
+  "corpusStatus": {
+    "frozenTasks": 3,
+    "validAtPrimaryRun": 2,
+    "invalidControlAtPrimaryRun": 1
+  },
+  "primary": {
+    "scoredTasks": 2,
+    "passed": 0,
+    "failed": 2,
+    "passRate": 0,
+    "retries": 0,
+    "harnessErrors": 0,
+    "methodology": "First recorded attempt per taskId+agentId; retries excluded from primary score."
+  },
+  "controls": [
+    {
+      "instanceId": "fair-workflows__nanopub-140",
+      "status": "VALID",
+      "negativeControl": "FAIL",
+      "goldControl": "PASS"
+    },
+    {
+      "instanceId": "fairlearn__fairlearn-636",
+      "status": "VALID",
+      "negativeControl": "FAIL",
+      "goldControl": "PASS"
+    },
+    {
+      "instanceId": "falconry__falcon-2254",
+      "status": "INVALID_CONTROL",
+      "negativeControl": "FAIL",
+      "goldControl": "FAIL",
+      "reason": "Declared test requirements were not yet installed by the importer at v1 primary-run time."
+    }
+  ],
+  "postPilotDiagnostics": [
+    {
+      "instanceId": "fairlearn__fairlearn-636",
+      "outcome": "FAIL",
+      "note": "After context compaction and recoverable missing-file reads, the agent completed a patch and exited cleanly; hidden evaluation passed 52/53 tests and rejected the patch on test_single_element_lists. This does not alter the v1 primary score."
+    },
+    {
+      "instanceId": "falconry__falcon-2254",
+      "outcome": "CONTROL_VALIDATED",
+      "note": "After validated reqs_path support, negative control failed and gold control passed. This revalidation is separate from the frozen v1 score."
+    }
+  ],
+  "claimBoundary": "This is a small local-model engineering pilot and infrastructure validation, not a comparative provider benchmark or a claim of model superiority."
+}

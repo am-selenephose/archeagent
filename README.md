@@ -196,7 +196,7 @@ node benchmarks/provider/run.mjs \
   --ledger=benchmarks/provider/results/living-benchmark.jsonl
 ~~~
 
-The harness is implemented and locally validated. A real SWE-Rebench development task has also been executed with a local Qwen model: the environment and gold control passed while the model's plausible but incorrect patch was rejected by the hidden evaluator. That failure is preserved as a qualified development receipt, not reported as provider performance.
+The harness is implemented and locally validated. A frozen three-task SWE-Rebench pilot was also run with the local qwen2.5-14b-am adapter. At primary-run time, two tasks had valid authority controls and were scored; both first attempts failed, with zero retries. The third frozen task was marked INVALID_CONTROL rather than silently dropped. Later diagnostics improved the adapter/importer and revalidated Falcon separately, but those later runs do not rewrite the frozen v1 primary score.
 
 See benchmarks/provider/README.md for the data contract.
 
@@ -205,7 +205,7 @@ See benchmarks/provider/README.md for the data contract.
 The repository contains:
 
 - 25 TypeScript test files;
-- 81 TypeScript tests;
+- 90 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
@@ -214,7 +214,9 @@ The repository contains:
 - provider-benchmark harness validation;
 - leakage-safe SWE-Rebench importer validation;
 - deterministic synthetic routing benchmark;
-- one qualified real-task local-model development failure receipt with passing gold control.
+- a frozen three-task SWE-Rebench pilot manifest and controls;
+- a preserved Qwen primary ledger with 2 scored first attempts, 0 passes, and 0 retries;
+- separate post-pilot diagnostic receipts that do not rewrite the primary ledger.
 
 Run the complete gate with:
 

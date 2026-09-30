@@ -11,6 +11,8 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 const MAX_FILE_BYTES = 64 * 1024;
 const MAX_LIST_FILES = 600;
 const MAX_SEARCH_RESULTS = 80;
+const MAX_MODEL_CONTEXT_CHARS = 24_000;
+const MAX_MODEL_TOOL_RESULT_CHARS = 10_000;
 
 export function validateRepoRelativePath(value) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -274,6 +276,146 @@ async function applyAction(cwd, action) {
   }
 }
 
+function recoverableToolError(action, error) {
+  if (
+    action?.action === 'read_file' &&
+    error &&
+    typeof error === 'object' &&
+    error.code === 'ENOENT'
+  ) {
+    return {
+      toolError: true,
+      code: 'ENOENT',
+      message: 'file not found: ' + validateRepoRelativePath(action.path),
+    };
+  }
+
+  return null;
+}
+
+function compactTextForModel(value, maxChars) {
+  if (typeof value !== 'string' || value.length <= maxChars) {
+    return {
+      text: value,
+      truncated: false,
+      originalChars: typeof value === 'string' ? value.length : 0,
+    };
+  }
+
+  const markerText = '\n...[tool result truncated; use search_text or a more targeted read]...\n';
+  const available = Math.max(0, maxChars - markerText.length);
+  const headChars = Math.ceil(available * 0.7);
+  const tailChars = available - headChars;
+
+  return {
+    text:
+      value.slice(0, headChars) +
+      markerText +
+      value.slice(Math.max(0, value.length - tailChars)),
+    truncated: true,
+    originalChars: value.length,
+  };
+}
+
+function serializeActionForModel(action) {
+  if (action.action === 'write_file') {
+    return JSON.stringify({
+      action: action.action,
+      path: action.path,
+      contentOmitted: true,
+      contentChars:
+        typeof action.content === 'string' ? action.content.length : 0,
+    });
+  }
+
+  if (action.action === 'replace_text') {
+    return JSON.stringify({
+      action: action.action,
+      path: action.path,
+      oldTextChars:
+        typeof action.old_text === 'string' ? action.old_text.length : 0,
+      newTextChars:
+        typeof action.new_text === 'string' ? action.new_text.length : 0,
+    });
+  }
+
+  return JSON.stringify(action);
+}
+
+function serializeToolResultForModel(action, result) {
+  if (
+    action.action === 'read_file' &&
+    typeof result?.content === 'string'
+  ) {
+    const compacted = compactTextForModel(
+      result.content,
+      MAX_MODEL_TOOL_RESULT_CHARS - 500,
+    );
+
+    return JSON.stringify({
+      toolResult: {
+        path: result.path,
+        content: compacted.text,
+        toolResultTruncated: compacted.truncated,
+        originalChars: compacted.originalChars,
+      },
+    });
+  }
+
+  const serialized = JSON.stringify({ toolResult: result });
+  if (serialized.length <= MAX_MODEL_TOOL_RESULT_CHARS) {
+    return serialized;
+  }
+
+  const preview = compactTextForModel(
+    serialized,
+    MAX_MODEL_TOOL_RESULT_CHARS - 500,
+  );
+
+  return JSON.stringify({
+    toolResultTruncated: true,
+    action: action.action,
+    originalChars: serialized.length,
+    preview: preview.text,
+  });
+}
+
+function compactMessagesForModel(messages) {
+  const total = messages.reduce(
+    (sum, message) => sum + message.content.length,
+    0,
+  );
+  if (total <= MAX_MODEL_CONTEXT_CHARS) return messages;
+
+  const base = messages.slice(0, 2);
+  const baseChars = base.reduce(
+    (sum, message) => sum + message.content.length,
+    0,
+  );
+  const compactionNotice = {
+    role: 'user',
+    content:
+      'Earlier tool turns were compacted to stay within the local model context window. ' +
+      'The original task above is authoritative. Re-inspect with search_text or read_file if older evidence is needed.',
+  };
+
+  let budget =
+    MAX_MODEL_CONTEXT_CHARS -
+    baseChars -
+    compactionNotice.content.length;
+  const recent = [];
+
+  for (let index = messages.length - 1; index >= 2; index -= 1) {
+    const message = messages[index];
+    if (message.content.length > budget) break;
+    recent.push(message);
+    budget -= message.content.length;
+  }
+
+  recent.reverse();
+  return [...base, compactionNotice, ...recent];
+}
+
 function systemPrompt() {
   return [
     'You are a bounded coding agent operating inside one repository.',
@@ -312,7 +454,7 @@ export async function runToolAgent({
   ];
 
   for (let step = 1; step <= maxSteps; step += 1) {
-    const raw = await complete(messages);
+    const raw = await complete(compactMessagesForModel(messages));
 
     let action;
     try {
@@ -346,14 +488,24 @@ export async function runToolAgent({
       continue;
     }
 
-    const result = await applyAction(cwd, action);
+    let result;
+    try {
+      result = await applyAction(cwd, action);
+    } catch (error) {
+      const recoverable = recoverableToolError(action, error);
+      if (!recoverable) throw error;
+      result = recoverable;
+    }
 
     transcript.push({ step, action: action.action, request: action, result });
 
-    messages.push({ role: 'assistant', content: JSON.stringify(action) });
+    messages.push({
+      role: 'assistant',
+      content: serializeActionForModel(action),
+    });
     messages.push({
       role: 'user',
-      content: JSON.stringify({ toolResult: result }),
+      content: serializeToolResultForModel(action, result),
     });
 
     if (action.action === 'finish') {

@@ -1,0 +1,66 @@
+{
+  "schema": "archeagent.swerebench-pilot-corpus.v1",
+  "frozenAt": "2026-09-30",
+  "source": {
+    "family": "SWE-Rebench",
+    "localDataset": "equal_0.3999999_0.9999999_swe-gym_and_rebench_demo.json",
+    "cacheFamily": "swe_rebench"
+  },
+  "selection": {
+    "rule": "Include every record in the local demo source that has a matching cache, language=py, non-empty repo/base_commit/problem_statement/test_patch/gold patch, Python major.minor, install exactly `pip install -e .` or `pip install -e .[dev]`, pre_install limited to no commands or `apt-get update` + `apt-get install -y gcc`, and at least one FAIL_TO_PASS or PASS_TO_PASS target.",
+    "cherryPickAfterOutcome": false,
+    "eligibleCount": 3
+  },
+  "tasks": [
+    {
+      "instanceId": "fair-workflows__nanopub-140",
+      "repo": "fair-workflows/nanopub",
+      "baseCommit": "859c68baed45027eba70fc222e08ccb3cedfa96b",
+      "python": "3.9",
+      "install": "pip install -e .[dev]",
+      "isLite": true,
+      "difficultyScore": 0,
+      "promptChars": 432,
+      "goldPatchChars": 709,
+      "testPatchChars": 954,
+      "failToPass": 1,
+      "passToPass": 2,
+      "modifiedFiles": 1
+    },
+    {
+      "instanceId": "fairlearn__fairlearn-636",
+      "repo": "fairlearn/fairlearn",
+      "baseCommit": "fe8e5e2ae768986edada56fd086cded207d6d49c",
+      "python": "3.8",
+      "install": "pip install -e .",
+      "isLite": false,
+      "difficultyScore": 3,
+      "promptChars": 801,
+      "goldPatchChars": 720,
+      "testPatchChars": 628,
+      "failToPass": 1,
+      "passToPass": 52,
+      "modifiedFiles": 1
+    },
+    {
+      "instanceId": "falconry__falcon-2254",
+      "repo": "falconry/falcon",
+      "baseCommit": "cbca63dc7739720eab856f48b32f9e782438be7a",
+      "python": "3.9",
+      "install": "pip install -e .",
+      "isLite": false,
+      "difficultyScore": 2,
+      "promptChars": 246,
+      "goldPatchChars": 4560,
+      "testPatchChars": 9268,
+      "failToPass": 1,
+      "passToPass": 228,
+      "modifiedFiles": 4
+    }
+  ],
+  "controlPolicy": {
+    "invalidControlHandling": "Never silently drop a frozen task. Mark INVALID_CONTROL with evidence if environment/gold control fails.",
+    "goldPatchExposure": "Gold solution is authority-only and never serialized into agent task input.",
+    "hiddenTestExposure": "Hidden test patch is injected only after agent exit."
+  }
+}

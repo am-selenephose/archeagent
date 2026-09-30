@@ -1,0 +1,48 @@
+{
+  "schema": "archeagent.swerebench-pilot-controls.v1",
+  "corpus": "swerebench-pilot-v1",
+  "tasks": [
+    {
+      "instanceId": "fair-workflows__nanopub-140",
+      "negativeControl": {
+        "exitCode": 1,
+        "expected": "FAIL",
+        "signal": "FAILED tests/test_setup_profile.py::test_validate_orcid_id - TypeError"
+      },
+      "goldControl": {
+        "exitCode": 0,
+        "expected": "PASS",
+        "signal": "3 passed in 0.05s"
+      },
+      "status": "VALID"
+    },
+    {
+      "instanceId": "fairlearn__fairlearn-636",
+      "negativeControl": {
+        "exitCode": 1,
+        "expected": "FAIL",
+        "signal": "FAILED test/unit/metrics/test_metricframe_smoke.py::test_single_element_lists"
+      },
+      "goldControl": {
+        "exitCode": 0,
+        "expected": "PASS",
+        "signal": "53 passed in 0.97s"
+      },
+      "status": "VALID"
+    },
+    {
+      "instanceId": "falconry__falcon-2254",
+      "negativeControl": {
+        "exitCode": 4,
+        "expected": "FAIL",
+        "signal": "ModuleNotFoundError: No module named 'cbor2'"
+      },
+      "goldControl": {
+        "exitCode": 4,
+        "expected": "PASS",
+        "signal": "ModuleNotFoundError: No module named 'cbor2'"
+      },
+      "status": "INVALID_CONTROL"
+    }
+  ]
+}

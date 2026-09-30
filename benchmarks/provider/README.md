@@ -169,10 +169,9 @@ This proves only the end-to-end plumbing: local model -> bounded editing tools -
 
 The qualified receipt is stored at benchmarks/provider/results/local-qwen-smoke-v1.json.
 
-
 ## SWE-Rebench import
 
-Archeagent can convert selected Python SWE-Rebench records into provider-benchmark tasks without exposing the gold solution patch to the agent.
+Archeagent can convert selected Python SWE-Rebench records into provider-benchmark tasks without exposing the gold solution patch to the coding agent.
 
 ~~~bash
 pnpm benchmark:provider:import:swerebench -- \
@@ -190,60 +189,92 @@ Current importer guarantees:
 - test_patch is benchmark-authority material and is injected only after agent exit;
 - hidden patch files are normalized to a valid terminal newline without changing patch semantics;
 - generated hidden evaluator modules are syntax-checked by tests;
-- Python tasks run their hidden tests in a pinned python:<major.minor>-slim Docker image;
-- Docker uses host networking because the validated benchmark host cannot resolve package mirrors through its default Docker DNS;
+- Python tasks run hidden tests in a pinned python:<major.minor>-slim Docker image;
+- Docker uses host networking on the validated benchmark host because its default Docker DNS could not resolve package mirrors;
 - only allowlisted editable install forms are accepted: pip install -e . and pip install -e .[dev];
-- arbitrary dataset shell commands are not executed by the importer.
+- cache-declared pip_packages are tokenized and validated before argv-safe installation;
+- cache-declared repo-relative reqs_path requirement files are path-validated before pip install -r;
+- requirement paths may not escape the repository;
+- arbitrary dataset shell commands are never executed by the importer;
+- FAIL_TO_PASS plus PASS_TO_PASS targets are evaluated together;
+- hidden test files are restored to the pinned base state before the hidden test patch is applied.
 
-The importer currently rejects non-Python tasks rather than inventing an evaluator it cannot reproduce.
+The importer still rejects non-Python tasks rather than inventing an evaluator it cannot reproduce.
 
+A converted task is not a benchmark result. It becomes evidence only after authority controls and the hidden evaluator produce receipts.
 
-## SWE-Rebench importer
+## Bounded local OpenAI-compatible coding agent
 
-Archeagent can convert selected Python SWE-Rebench records into the provider benchmark task format without exposing the gold solution patch to the coding agent.
+The local adapter intentionally exposes no shell tool to the model. Allowed model actions are:
 
-The importer:
+- list_files
+- read_file
+- search_text
+- replace_text
+- write_file
+- finish
 
-- requires an immutable repository and base commit;
-- copies only the problem statement into the agent prompt;
-- drops the gold solution patch entirely;
-- stores the benchmark test patch as a hidden evaluator asset;
-- restores hidden test files to the pinned base state before applying the hidden patch;
-- rejects hidden patch paths that escape the repository;
-- rejects arbitrary dataset install shell and only accepts explicit editable-install shapes;
-- evaluates Python tasks in a pinned Python slim Docker image using targeted FAIL_TO_PASS plus PASS_TO_PASS tests.
+Security and reliability boundaries:
 
-Example:
+- repository traversal and symlink escapes are rejected;
+- replace_text requires exactly one match;
+- malformed JSON actions receive a compact retry instead of silently guessing intent;
+- read_file ENOENT is a recoverable tool result so a model may list/search again;
+- path/security violations remain hard failures;
+- large model-facing tool results are clipped with explicit truncation metadata;
+- older tool turns are compacted when needed while preserving the system prompt and original task prompt;
+- the internal action transcript is not replaced by the compacted model-facing context.
 
-~~~bash
-pnpm benchmark:swerebench:import -- \
-  --input=/path/to/swe-rebench.json \
-  --cache-dir=/path/to/swe_rebench/cache \
-  --instances=fair-workflows__nanopub-140 \
-  --out=/tmp/archeagent-swerebench-tasks.jsonl
-~~~
+The same adapter can target any compatible /v1/chat/completions endpoint by changing the base URL and model. An optional ARCHEAGENT_AGENT_API_KEY is sent as a Bearer token and is not written to the benchmark ledger.
 
-Current support is deliberately narrow: Python tasks whose cache metadata declares Python major.minor and an allowlisted editable install command. Unsupported languages or install recipes are rejected rather than approximated.
+## SWE-Rebench pilot v1
 
-A task imported from SWE-Rebench is still not a benchmark result. It becomes evidence only after an agent actually runs and the hidden evaluator produces a receipt.
+The first frozen pilot corpus selected every local demo record that satisfied the predeclared Python/importer criteria before model outcomes were observed.
 
+Frozen corpus:
 
-## Real SWE-Rebench development pilot
+- fair-workflows__nanopub-140
+- fairlearn__fairlearn-636
+- falconry__falcon-2254
 
-The first imported real-task development pilot used fair-workflows__nanopub-140.
+Authority-control policy:
 
-Controls:
+1. the pinned base plus hidden tests must fail;
+2. the authority-held gold solution plus the same hidden tests must pass;
+3. a frozen task that fails controls is marked INVALID_CONTROL rather than silently removed.
 
-- the pinned base environment passed the selected existing tests;
-- the hidden evaluator accepted the authority-held gold solution with 3/3 selected tests passing;
-- the gold solution and hidden test patch were not exposed to the coding agent.
+At the time of the v1 primary run:
 
-The local qwen2.5-14b-am development adapter then failed the task. After protocol recovery improvements it produced a real patch and exited cleanly, but the hidden evaluator rejected the patch with 2 failed and 1 passed selected tests.
+- nanopub-140: VALID control;
+- fairlearn-636: VALID control;
+- falcon-2254: INVALID_CONTROL because the then-current importer did not yet install its cache-declared requirements files.
 
-This failure is preserved rather than replaced by a retry. It demonstrates that the importer/evaluator can reject a plausible but incorrect model patch.
+The frozen Qwen primary ledger therefore scored two tasks:
 
-Qualified receipt:
+- primary runs: 2
+- passes: 0
+- failures: 2
+- retries: 0
+- primary pass rate: 0%
 
-benchmarks/provider/results/local-qwen-swerebench-nanopub-140-dev-v1.json
+Those failures are preserved. They are not replaced by later development replays.
 
-This single development task is not included as a provider-performance claim.
+Post-pilot diagnostics identified infrastructure issues without rewriting the original ledger:
+
+- bounded context compaction removed a local-model context-overflow failure mode;
+- recoverable missing-file reads removed a model-path-guess crash;
+- Fairlearn then produced a patch cleanly, but the hidden evaluator still rejected it with 52/53 tests passing;
+- validated reqs_path support later made Falcon's control valid.
+
+Files:
+
+- benchmarks/provider/pilots/swerebench-pilot-v1.manifest.json
+- benchmarks/provider/pilots/swerebench-pilot-v1.controls.json
+- benchmarks/provider/pilots/swerebench-pilot-v1.summary.json
+- benchmarks/provider/results/swerebench-pilot-v1-qwen-primary.jsonl
+- benchmarks/provider/results/swerebench-pilot-v1-qwen-summary.json
+- benchmarks/provider/pilots/swerebench-pilot-v1.fairlearn-postpilot-diagnostic.json
+- benchmarks/provider/pilots/swerebench-pilot-v1.falcon-revalidation.json
+
+This pilot is evidence that the benchmark plumbing can preserve failures, validate hidden evaluators with gold controls, and distinguish infrastructure defects from model-patch defects. It is not a comparative provider benchmark and is not evidence that one model is superior to another.
+

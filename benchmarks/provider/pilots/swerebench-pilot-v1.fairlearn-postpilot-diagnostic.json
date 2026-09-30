@@ -1,0 +1,39 @@
+{
+  "schema": "archeagent.swerebench-postpilot-diagnostic.v1",
+  "recordedDate": "2026-09-30",
+  "task": {
+    "instanceId": "fairlearn__fairlearn-636",
+    "repo": "fairlearn/fairlearn",
+    "baseCommit": "fe8e5e2ae768986edada56fd086cded207d6d49c"
+  },
+  "historicalPrimary": {
+    "corpus": "swerebench-pilot-v1",
+    "result": "FAIL",
+    "changed": false,
+    "reason": "Original first attempt exited before a patch because local-agent context exceeded the 8192-token server window. The primary ledger remains unchanged."
+  },
+  "wrapperFixes": [
+    "Bound model-facing tool results and history to 24000 characters.",
+    "Preserved original task prompt while compacting older tool turns.",
+    "Made read_file ENOENT recoverable without weakening path/security errors."
+  ],
+  "replay": {
+    "result": "FAIL",
+    "agentExitCode": 0,
+    "changed": true,
+    "steps": 11,
+    "patch": {
+      "file": "fairlearn/metrics/_metric_frame.py",
+      "linesChanged": 2,
+      "summary": "Expanded the difference() invalid-method ValueError message."
+    },
+    "hiddenEvaluator": {
+      "exitCode": 1,
+      "selectedTests": 53,
+      "passed": 52,
+      "failed": 1,
+      "failingTest": "test/unit/metrics/test_metricframe_smoke.py::test_single_element_lists"
+    }
+  },
+  "conclusion": "The later wrapper revision removed the context and missing-file infrastructure blockers. The replay still failed on semantics, so it is not a recovered benchmark pass and does not alter the frozen v1 primary score."
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archeagent.swerebench-pilot-controls.v1",
+  "title": "Archeagent SWE-Rebench Pilot Controls",
+  "type": "object",
+  "required": [
+    "schema",
+    "corpus",
+    "tasks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "archeagent.swerebench-pilot-controls.v1"
+    },
+    "corpus": {
+      "type": "string"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "instanceId",
+          "negativeControl",
+          "goldControl",
+          "status"
+        ],
+        "properties": {
+          "instanceId": {
+            "type": "string"
+          },
+          "negativeControl": {
+            "type": "object",
+            "required": [
+              "exitCode",
+              "expected"
+            ],
+            "properties": {
+              "exitCode": {
+                "type": "integer"
+              },
+              "expected": {
+                "const": "FAIL"
+              }
+            }
+          },
+          "goldControl": {
+            "type": "object",
+            "required": [
+              "exitCode",
+              "expected"
+            ],
+            "properties": {
+              "exitCode": {
+                "type": "integer"
+              },
+              "expected": {
+                "const": "PASS"
+              }
+            }
+          },
+          "status": {
+            "enum": [
+              "VALID",
+              "INVALID_CONTROL"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

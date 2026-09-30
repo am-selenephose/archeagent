@@ -7,6 +7,11 @@ import {
   validateRepoRelativePath,
 } from '../../benchmarks/provider/agents/openai-compatible-agent-lib.mjs';
 
+type AgentMessage = {
+  role: string;
+  content: string;
+};
+
 describe('OpenAI-compatible local coding agent', () => {
   it('rejects paths that escape the repository', () => {
     expect(() => validateRepoRelativePath('../secret.txt')).toThrow(/inside the repository/i);
@@ -213,6 +218,152 @@ describe('OpenAI-compatible local coding agent', () => {
           new_text: 'changed',
         }),
       })).rejects.toThrow(/exactly once/i);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('bounds model-facing tool history so large reads cannot overflow local context', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(
+        join(dir, 'large.txt'),
+        'HEAD\n' + 'x'.repeat(50_000) + '\nTAIL\n',
+        'utf8',
+      );
+
+      let call = 0;
+      const observedMessageSizes: number[] = [];
+      const observedPayloads: string[] = [];
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect large.txt and finish.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          observedMessageSizes.push(
+            messages.reduce((sum, message) => sum + message.content.length, 0),
+          );
+          observedPayloads.push(messages.at(-1)?.content ?? '');
+          call += 1;
+
+          if (call === 1) {
+            return JSON.stringify({ action: 'read_file', path: 'large.txt' });
+          }
+
+          expect(observedMessageSizes.at(-1)).toBeLessThanOrEqual(24_000);
+          expect(messages.some((message) =>
+            message.content.includes('toolResultTruncated'),
+          )).toBe(true);
+          return JSON.stringify({ action: 'finish', summary: 'inspected' });
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+      expect(observedMessageSizes).toHaveLength(2);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('compacts older tool turns while preserving the original task prompt', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      for (let index = 0; index < 4; index += 1) {
+        await writeFile(
+          join(dir, `file-${index}.txt`),
+          `MARK-${index}\n` + 'y'.repeat(12_000),
+          'utf8',
+        );
+      }
+
+      const taskPrompt = 'Inspect the four files and then finish.';
+      let call = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt,
+        maxSteps: 8,
+        complete: async (messages: AgentMessage[]) => {
+          const totalChars = messages.reduce(
+            (sum, message) => sum + message.content.length,
+            0,
+          );
+          expect(totalChars).toBeLessThanOrEqual(24_000);
+          expect(messages[1]?.content).toBe(taskPrompt);
+
+          if (call < 4) {
+            return JSON.stringify({
+              action: 'read_file',
+              path: `file-${call++}.txt`,
+            });
+          }
+
+          call += 1;
+          return JSON.stringify({ action: 'finish', summary: 'inspected' });
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 5 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns a recoverable tool error when the model reads a missing file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'real.txt'), 'hello\n', 'utf8');
+
+      const replies = [
+        { action: 'read_file', path: 'guessed.txt' },
+        { action: 'list_files' },
+        { action: 'read_file', path: 'real.txt' },
+        { action: 'finish', summary: 'recovered' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect the repository.',
+        maxSteps: 6,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            expect(messages.at(-1)?.content).toContain('toolError');
+            expect(messages.at(-1)?.content).toContain('ENOENT');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 4 });
+      expect(result.transcript.map((entry) => entry.action)).toEqual([
+        'read_file',
+        'list_files',
+        'read_file',
+        'finish',
+      ]);
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'ENOENT',
+      });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('still hard-fails security boundary violations instead of returning them to the model', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await expect(runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Read outside.',
+        maxSteps: 2,
+        complete: async () => JSON.stringify({
+          action: 'read_file',
+          path: '../secret.txt',
+        }),
+      })).rejects.toThrow(/inside the repository/i);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
