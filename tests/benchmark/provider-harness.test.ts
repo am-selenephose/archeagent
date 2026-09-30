@@ -191,6 +191,7 @@ describe('provider benchmark harness', () => {
             path: 'hidden/check.mjs',
             content: [
               "import { readFileSync } from 'node:fs';",
+              "console.log('hidden-evaluator-ok');",
               "process.exit(readFileSync('answer.txt', 'utf8').trim() === 'good' ? 0 : 1);",
             ].join('\n'),
           }],
@@ -209,9 +210,15 @@ describe('provider benchmark harness', () => {
       expect(record.setupRuns[0]!.exitCode).toBe(0);
       expect(record.evaluatorRuns).toHaveLength(1);
       expect(record.evaluatorRuns[0]!.exitCode).toBe(0);
+      expect(record.evaluatorRuns[0]!.stdoutTail).toContain(
+        'hidden-evaluator-ok',
+      );
+      expect(record.patchDiffTail).toContain('answer.txt');
       expect(record).toEqual(expect.objectContaining({
         agentStdoutTail: expect.any(String),
         agentStderrTail: expect.any(String),
+        patchDiffTail: expect.any(String),
+        patchDiffTruncated: false,
       }));
     } finally {
       await rm(fixture, { recursive: true, force: true });

@@ -66,6 +66,7 @@ Implemented prototype infrastructure:
 - atomic PostgreSQL replay consumption for one-time release leases
 - TLA+ release-authority model with a deliberately unsafe negative control
 - provider-backed benchmark harness with hidden evaluators and an append-only living results ledger
+- leakage-safe Python SWE-Rebench importer with hidden test-patch injection and Docker-isolated evaluation
 - Go Docker execution boundary with explicit isolation limits
 - OpenTelemetry tracing hooks
 
@@ -195,7 +196,7 @@ node benchmarks/provider/run.mjs \
   --ledger=benchmarks/provider/results/living-benchmark.jsonl
 ~~~
 
-The harness is implemented and locally validated. No real-provider performance claim is made until actual provider agents are run against an executable task corpus.
+The harness is implemented and locally validated. A real SWE-Rebench development task has also been executed with a local Qwen model: the environment and gold control passed while the model's plausible but incorrect patch was rejected by the hidden evaluator. That failure is preserved as a qualified development receipt, not reported as provider performance.
 
 See benchmarks/provider/README.md for the data contract.
 
@@ -203,15 +204,17 @@ See benchmarks/provider/README.md for the data contract.
 
 The repository contains:
 
-- 22 TypeScript test files;
-- 54 TypeScript tests;
+- 25 TypeScript test files;
+- 81 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
 - Go executor tests;
 - TLA+ release-authority verification with negative control;
 - provider-benchmark harness validation;
-- deterministic synthetic routing benchmark.
+- leakage-safe SWE-Rebench importer validation;
+- deterministic synthetic routing benchmark;
+- one qualified real-task local-model development failure receipt with passing gold control.
 
 Run the complete gate with:
 

@@ -438,7 +438,8 @@ export async function runBenchmarkTask(task, agent) {
         exitCode: result.exitCode,
         timedOut: result.timedOut,
         durationMs: result.durationMs,
-        stderrTail: result.stderr.slice(-2000),
+        stdoutTail: result.stdout.slice(-4000),
+        stderrTail: result.stderr.slice(-4000),
       });
     }
 
@@ -463,8 +464,12 @@ export async function runBenchmarkTask(task, agent) {
       agentExitCode: agentRun.exitCode,
       agentTimedOut: agentRun.timedOut,
       agentDurationMs: agentRun.durationMs,
+      agentStdoutTail: agentRun.stdout.slice(-4000),
+      agentStderrTail: agentRun.stderr.slice(-4000),
       patchSha256: changed ? await hashText(diff.stdout) : null,
       patchBytes: Buffer.byteLength(diff.stdout),
+      patchDiffTail: diff.stdout.slice(-8000),
+      patchDiffTruncated: diff.stdout.length > 8000,
       evaluatorFilesInjected: task.evaluator.files.length,
       evaluatorRuns,
       recordedAt: new Date().toISOString(),

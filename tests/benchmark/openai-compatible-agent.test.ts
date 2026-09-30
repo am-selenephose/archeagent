@@ -118,6 +118,106 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
+  it('recovers from one malformed model action with a compact retry', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(
+        join(dir, 'module.py'),
+        'def validate(ctx, value):\n    return value\n',
+        'utf8',
+      );
+
+      const replies = [
+        '{"action":"write_file","path":"module.py","content":"truncated',
+        JSON.stringify({
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'def validate(ctx, value):',
+          new_text: 'def validate(ctx, param, value):',
+        }),
+        JSON.stringify({ action: 'finish', summary: 'fixed' }),
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Update the callback signature.',
+        maxSteps: 5,
+        complete: async () => replies[index++]!,
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(result.transcript.map((entry) => entry.action)).toEqual([
+        'invalid_action',
+        'replace_text',
+        'finish',
+      ]);
+      expect(await readFile(join(dir, 'module.py'), 'utf8')).toContain(
+        'validate(ctx, param, value)',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('replaces one exact text match without rewriting the whole file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(
+        join(dir, 'module.py'),
+        'def validate(ctx, value):\n    return value\n',
+        'utf8',
+      );
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'def validate(ctx, value):',
+          new_text: 'def validate(ctx, param, value):',
+        },
+        { action: 'finish', summary: 'updated callback signature' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Update the callback signature.',
+        maxSteps: 4,
+        complete: async () => JSON.stringify(replies[index++]),
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+      expect(await readFile(join(dir, 'module.py'), 'utf8')).toBe(
+        'def validate(ctx, param, value):\n    return value\n',
+      );
+      expect(result.transcript[0]?.action).toBe('replace_text');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects ambiguous exact-text replacements', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.txt'), 'same\nsame\n', 'utf8');
+
+      await expect(runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Replace same.',
+        maxSteps: 2,
+        complete: async () => JSON.stringify({
+          action: 'replace_text',
+          path: 'module.txt',
+          old_text: 'same',
+          new_text: 'changed',
+        }),
+      })).rejects.toThrow(/exactly once/i);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('refuses model attempts to write outside the repository', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {

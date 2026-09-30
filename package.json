@@ -13,7 +13,9 @@
     "benchmark:routing": "node benchmarks/contextual-routing.mjs",
     "verify:formal": "bash formal/verify.sh",
     "benchmark:provider:validate": "node benchmarks/provider/validate.mjs",
-    "benchmark:provider:report": "node benchmarks/provider/report.mjs"
+    "benchmark:provider:report": "node benchmarks/provider/report.mjs",
+    "benchmark:provider:import:swerebench": "node benchmarks/provider/import-swerebench.mjs",
+    "benchmark:swerebench:import": "node benchmarks/provider/import-swerebench.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",

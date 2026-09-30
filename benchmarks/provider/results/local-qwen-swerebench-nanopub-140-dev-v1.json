@@ -1,0 +1,64 @@
+{
+  "schema": "archeagent.swerebench-development-pilot.v1",
+  "qualification": "Development pilot on one real SWE-Rebench task. This is evidence of importer/evaluator behavior and one local-model failure, not a provider performance benchmark.",
+  "recordedDate": "2026-09-30",
+  "task": {
+    "instanceId": "fair-workflows__nanopub-140",
+    "repo": "fair-workflows/nanopub",
+    "baseCommit": "859c68baed45027eba70fc222e08ccb3cedfa96b",
+    "source": "swe-rebench",
+    "language": "python",
+    "python": "3.9",
+    "goldPatchExposedToAgent": false,
+    "hiddenTestPatchExposedToAgent": false
+  },
+  "controls": {
+    "pinnedEnvironmentBaseline": {
+      "result": "PASS",
+      "selectedExistingTests": 3,
+      "passed": 3
+    },
+    "goldSolutionHiddenEvaluatorControl": {
+      "result": "PASS",
+      "selectedTests": 3,
+      "passed": 3,
+      "failed": 0,
+      "note": "Gold solution was applied only by benchmark authority after model evaluation and is not stored in this receipt."
+    }
+  },
+  "attempts": [
+    {
+      "agentId": "qwen2.5-14b-am-local-swerebench",
+      "model": "qwen2.5-14b-am",
+      "result": "FAIL",
+      "changed": false,
+      "agentExitCode": 1,
+      "agentDurationMs": 23975,
+      "evaluatorExitCode": 1,
+      "diagnosis": "Adapter response exceeded the compact JSON action contract before a patch was produced. This motivated bounded replace_text and malformed-action recovery."
+    },
+    {
+      "agentId": "qwen2.5-14b-am-local-swerebench-agent-v2",
+      "model": "qwen2.5-14b-am",
+      "adapterRevision": "abc1f06d831810f38b85e5e8b821245cfa5e3851",
+      "result": "FAIL",
+      "changed": true,
+      "agentExitCode": 0,
+      "agentDurationMs": 4930,
+      "patchSha256": "9b797c6cd7dac61f22e6ee21608ee718d1b8d20400d59588f511fa4b85756477",
+      "patchBytes": 491,
+      "evaluatorExitCode": 1,
+      "patchSummary": "Changed Click options by adding expose_value=False to --orcid_id and --name instead of updating the callback signature.",
+      "hiddenEvaluator": {
+        "selectedTests": 3,
+        "passed": 1,
+        "failed": 2,
+        "failureSignals": [
+          "validate_orcid_id() got an unexpected keyword argument 'param'",
+          "main() missing 2 required positional arguments: 'orcid_id' and 'name'"
+        ]
+      }
+    }
+  ],
+  "conclusion": "Evaluator discriminated correctly: the pinned environment was valid, the hidden evaluator accepted the authority-held gold solution, and rejected the local model's incorrect patch."
+}

@@ -152,6 +152,37 @@ async function writeRepoFile(cwd, path, content) {
   return { path: safe, bytes: Buffer.byteLength(content) };
 }
 
+async function replaceRepoText(cwd, path, oldText, newText) {
+  if (typeof oldText !== 'string' || oldText.length === 0) {
+    throw new Error('replace_text old_text must be a non-empty string');
+  }
+  if (typeof newText !== 'string') {
+    throw new Error('replace_text new_text must be a string');
+  }
+
+  const safe = validateRepoRelativePath(path);
+  const current = await readRepoFile(cwd, safe);
+  const first = current.indexOf(oldText);
+  const last = current.lastIndexOf(oldText);
+
+  if (first === -1 || first !== last) {
+    throw new Error('replace_text old_text must occur exactly once in ' + safe);
+  }
+
+  const next =
+    current.slice(0, first) +
+    newText +
+    current.slice(first + oldText.length);
+  const { target } = await assertNoSymlinkEscape(cwd, safe);
+  await writeFile(target, next, 'utf8');
+
+  return {
+    path: safe,
+    replacedBytes: Buffer.byteLength(oldText),
+    insertedBytes: Buffer.byteLength(newText),
+  };
+}
+
 function parseAction(raw) {
   if (typeof raw !== 'string') {
     throw new Error('model completion must be a string');
@@ -226,6 +257,13 @@ async function applyAction(cwd, action) {
       };
     case 'write_file':
       return writeRepoFile(cwd, action.path, action.content);
+    case 'replace_text':
+      return replaceRepoText(
+        cwd,
+        action.path,
+        action.old_text,
+        action.new_text,
+      );
     case 'finish':
       return {
         summary:
@@ -244,10 +282,12 @@ function systemPrompt() {
     '{"action":"list_files"}',
     '{"action":"read_file","path":"relative/path"}',
     '{"action":"search_text","query":"literal text"}',
+    '{"action":"replace_text","path":"relative/path","old_text":"exact old text","new_text":"exact replacement"}',
     '{"action":"write_file","path":"relative/path","content":"complete new file content"}',
     '{"action":"finish","summary":"what changed"}',
     'You have no shell tool. Do not ask to execute commands.',
     'Inspect before editing. Make the smallest correct change.',
+    'Prefer replace_text for small edits. Use write_file only when replacing or creating an entire file.',
     'Never attempt to access .git or paths outside the repository.',
   ].join('\n');
 }
@@ -273,7 +313,39 @@ export async function runToolAgent({
 
   for (let step = 1; step <= maxSteps; step += 1) {
     const raw = await complete(messages);
-    const action = parseAction(raw);
+
+    let action;
+    try {
+      action = parseAction(raw);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      const preview =
+        raw.length > 600 ? raw.slice(0, 600) + '...[truncated]' : raw;
+
+      transcript.push({
+        step,
+        action: 'invalid_action',
+        request: { preview },
+        result: { error: message },
+      });
+
+      messages.push({
+        role: 'assistant',
+        content: preview,
+      });
+      messages.push({
+        role: 'user',
+        content: [
+          'Your previous response could not be parsed as one JSON action.',
+          'Return exactly one compact JSON object and nothing else.',
+          'For a small code edit, use replace_text instead of rewriting the whole file.',
+          'Inspect/read/search again only if needed.',
+        ].join(' '),
+      });
+      continue;
+    }
+
     const result = await applyAction(cwd, action);
 
     transcript.push({ step, action: action.action, request: action, result });
