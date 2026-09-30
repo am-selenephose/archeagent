@@ -1,26 +1,67 @@
 [
   {
     "id": "codex",
-    "argv": ["codex", "exec", "-"],
-    "metadata": { "provider": "openai", "model": "codex" },
+    "argv": [
+      "codex",
+      "exec",
+      "-"
+    ],
+    "metadata": {
+      "provider": "openai",
+      "model": "codex"
+    },
     "timeoutMs": 900000
   },
   {
     "id": "claude",
-    "argv": ["claude", "-p"],
-    "metadata": { "provider": "anthropic", "model": "claude" },
+    "argv": [
+      "claude",
+      "-p"
+    ],
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude"
+    },
     "timeoutMs": 900000
   },
   {
     "id": "gemini",
-    "argv": ["gemini"],
-    "metadata": { "provider": "google", "model": "gemini" },
+    "argv": [
+      "gemini"
+    ],
+    "metadata": {
+      "provider": "google",
+      "model": "gemini"
+    },
     "timeoutMs": 900000
   },
   {
     "id": "local",
-    "argv": ["your-local-agent", "--stdin"],
-    "metadata": { "provider": "local", "model": "pinned-local-model" },
+    "argv": [
+      "your-local-agent",
+      "--stdin"
+    ],
+    "metadata": {
+      "provider": "local",
+      "model": "pinned-local-model"
+    },
+    "timeoutMs": 900000
+  },
+  {
+    "id": "local-openai-compatible",
+    "argv": [
+      "node",
+      "benchmarks/provider/agents/openai-compatible-agent.mjs"
+    ],
+    "env": {
+      "ARCHEAGENT_AGENT_BASE_URL": "http://127.0.0.1:11436/v1",
+      "ARCHEAGENT_AGENT_MODEL": "qwen2.5-14b-am",
+      "ARCHEAGENT_AGENT_MAX_STEPS": "24"
+    },
+    "metadata": {
+      "provider": "openai-compatible-local",
+      "model": "qwen2.5-14b-am"
+    },
     "timeoutMs": 900000
   }
 ]

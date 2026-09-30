@@ -209,6 +209,10 @@ describe('provider benchmark harness', () => {
       expect(record.setupRuns[0]!.exitCode).toBe(0);
       expect(record.evaluatorRuns).toHaveLength(1);
       expect(record.evaluatorRuns[0]!.exitCode).toBe(0);
+      expect(record).toEqual(expect.objectContaining({
+        agentStdoutTail: expect.any(String),
+        agentStderrTail: expect.any(String),
+      }));
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }

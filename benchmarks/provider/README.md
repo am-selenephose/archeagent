@@ -119,3 +119,51 @@ Harness errors count as failed primary runs. They are never silently dropped.
 pnpm benchmark:provider:validate validates parser, sampling, agent fingerprinting, first-attempt reporting and fixture assumptions without calling external providers or spending money.
 
 A provider-backed result is not claimed until real agent commands and executable real-repository evaluator tasks have actually been run.
+
+
+## Bounded OpenAI-compatible local agent
+
+Archeagent includes a provider-agnostic local coding adapter at:
+
+benchmarks/provider/agents/openai-compatible-agent.mjs
+
+It talks to an OpenAI-compatible chat-completions endpoint and deliberately does not expose shell execution to the model.
+
+The model can only request:
+
+- list_files
+- read_file
+- search_text
+- write_file
+- finish
+
+Repository traversal and symlink escapes are rejected. Hidden evaluator assets are still injected by the benchmark harness only after the model process exits.
+
+Environment:
+
+~~~bash
+export ARCHEAGENT_AGENT_BASE_URL=http://127.0.0.1:11436/v1
+export ARCHEAGENT_AGENT_MODEL=qwen2.5-14b-am
+export ARCHEAGENT_AGENT_MAX_STEPS=24
+~~~
+
+The same adapter can target another OpenAI-compatible endpoint by changing the base URL and model. An optional ARCHEAGENT_AGENT_API_KEY is sent as a Bearer token but is never written to the benchmark ledger.
+
+## Local integration smoke receipt
+
+On 2026-09-30, the adapter was exercised against a local llama.cpp server exposing qwen2.5-14b-am.
+
+One deliberately trivial fixture required the model to edit a tracked text file. The hidden evaluator did not exist in the model worktree until after the model exited.
+
+The final smoke run produced:
+
+- agent exit code: 0
+- patch changed: true
+- hidden evaluator exit code: 0
+- benchmark result: PASS
+- agent duration: 863 ms
+- patch SHA-256: 1d9282d75a08356c24fae0be2a81c9b35464fe41328d9064c3bbb8baaf0a160b
+
+This proves only the end-to-end plumbing: local model -> bounded editing tools -> patch capture -> hidden evaluator -> receipt. It is not evidence of coding-model quality and is not included in provider performance claims.
+
+The qualified receipt is stored at benchmarks/provider/results/local-qwen-smoke-v1.json.

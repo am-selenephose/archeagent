@@ -1,0 +1,33 @@
+{
+  "schema": "archeagent.provider-benchmark-smoke-receipt.v1",
+  "qualification": "Single trivial local fixture. Validates harness and bounded-agent plumbing only; not evidence of real software-engineering performance.",
+  "recordedAt": "2026-09-30T06:06:50.927Z",
+  "task": {
+    "id": "local-qwen-smoke-004",
+    "repo": "fixture/local",
+    "baseCommit": "7f7cc483586de6ecf1ba2312b93cefa87d268296",
+    "source": "local-smoke"
+  },
+  "agent": {
+    "id": "qwen2.5-14b-am-local",
+    "provider": "local-llama.cpp",
+    "model": "qwen2.5-14b-am",
+    "fingerprint": "d2ed5dfd1551fe32e5e2792f10f66b5ddb3848b8baeaca8087103a4fb4c1ae2b",
+    "exitCode": 0,
+    "timedOut": false,
+    "durationMs": 863
+  },
+  "patch": {
+    "changed": true,
+    "sha256": "1d9282d75a08356c24fae0be2a81c9b35464fe41328d9064c3bbb8baaf0a160b",
+    "bytes": 124
+  },
+  "evaluator": {
+    "filesInjected": 1,
+    "commandHash": "22cddc2527e7a71d644c876a7e611458437753be0312659d9fcbbd9a59c640cd",
+    "exitCode": 0,
+    "timedOut": false,
+    "durationMs": 24
+  },
+  "passed": true
+}
