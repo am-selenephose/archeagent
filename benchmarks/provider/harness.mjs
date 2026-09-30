@@ -1,6 +1,14 @@
-import { appendFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import {
+  appendFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { spawn } from 'node:child_process';
 
 function assertNonEmptyString(value, label) {
@@ -10,32 +18,81 @@ function assertNonEmptyString(value, label) {
   return value;
 }
 
+function normalizeArgv(value, label) {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((part) => typeof part !== 'string' || part.length === 0)
+  ) {
+    throw new Error(label + ' argv must be a non-empty string array');
+  }
+  return [...value];
+}
+
+function normalizeEvaluatorFile(raw) {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('evaluator file must be an object');
+  }
+
+  const path = assertNonEmptyString(raw.path, 'evaluator file path');
+  const portable = path.replaceAll('\\', '/');
+
+  if (
+    isAbsolute(path) ||
+    portable === '..' ||
+    portable.startsWith('../') ||
+    portable.includes('/../')
+  ) {
+    throw new Error('evaluator file path must remain inside the benchmark worktree');
+  }
+
+  return {
+    path: portable,
+    content: typeof raw.content === 'string' ? raw.content : '',
+  };
+}
+
 function normalizeTask(raw) {
-  if (!raw || typeof raw !== 'object') throw new Error('benchmark task must be an object');
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('benchmark task must be an object');
+  }
 
   const evaluator = raw.evaluator;
-  if (!evaluator || !Array.isArray(evaluator.commands) || evaluator.commands.length === 0) {
-    throw new Error('benchmark task evaluator.commands must be a non-empty array');
+  if (
+    !evaluator ||
+    !Array.isArray(evaluator.commands) ||
+    evaluator.commands.length === 0
+  ) {
+    throw new Error(
+      'benchmark task evaluator.commands must be a non-empty array',
+    );
   }
 
-  for (const command of evaluator.commands) {
-    assertNonEmptyString(command, 'evaluator command');
-  }
+  const commands = evaluator.commands.map((command, index) =>
+    normalizeArgv(command, 'evaluator command ' + index),
+  );
+  const files = Array.isArray(evaluator.files)
+    ? evaluator.files.map(normalizeEvaluatorFile)
+    : [];
 
   return {
     id: assertNonEmptyString(raw.id, 'task id'),
     repo: assertNonEmptyString(raw.repo, 'task repo'),
-    repoUrl: raw.repoUrl ? assertNonEmptyString(raw.repoUrl, 'task repoUrl') : null,
+    repoUrl: raw.repoUrl
+      ? assertNonEmptyString(raw.repoUrl, 'task repoUrl')
+      : null,
     baseCommit: assertNonEmptyString(raw.baseCommit, 'task baseCommit'),
     prompt: assertNonEmptyString(raw.prompt, 'task prompt'),
     evaluator: {
-      commands: [...evaluator.commands],
+      commands,
+      files,
       timeoutMs:
         Number.isFinite(evaluator.timeoutMs) && evaluator.timeoutMs > 0
           ? evaluator.timeoutMs
           : 600000,
     },
-    metadata: raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : {},
+    metadata:
+      raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : {},
   };
 }
 
@@ -49,7 +106,10 @@ export function parseTaskDataset(text) {
         return normalizeTask(JSON.parse(line));
       } catch (error) {
         throw new Error(
-          'invalid benchmark task at line ' + (index + 1) + ': ' + error.message,
+          'invalid benchmark task at line ' +
+            (index + 1) +
+            ': ' +
+            error.message,
         );
       }
     });
@@ -87,6 +147,17 @@ export function balancedSample(tasks, count) {
   return result;
 }
 
+function fingerprintAgent({ id, argv, env, metadata }) {
+  return createHash('sha256')
+    .update(JSON.stringify({
+      id,
+      argv,
+      envKeys: Object.keys(env).sort(),
+      metadata,
+    }))
+    .digest('hex');
+}
+
 export function validateAgentMatrix(raw) {
   if (!Array.isArray(raw) || raw.length === 0) {
     throw new Error('agent matrix must be a non-empty array');
@@ -96,19 +167,11 @@ export function validateAgentMatrix(raw) {
     if (!agent || typeof agent !== 'object') {
       throw new Error('agent at index ' + index + ' must be an object');
     }
-    const id = assertNonEmptyString(agent.id, 'agent id');
-    if (
-      !Array.isArray(agent.argv) ||
-      agent.argv.length === 0 ||
-      agent.argv.some((part) => typeof part !== 'string' || part.length === 0)
-    ) {
-      throw new Error('agent ' + id + ' argv must be a non-empty string array');
-    }
 
-    return {
-      id,
-      argv: [...agent.argv],
-      env:
+    const id = assertNonEmptyString(agent.id, 'agent id');
+    const argv = normalizeArgv(agent.argv, 'agent ' + id);
+
+    const env =
         agent.env && typeof agent.env === 'object'
           ? Object.fromEntries(
               Object.entries(agent.env).map(([key, value]) => [
@@ -116,7 +179,18 @@ export function validateAgentMatrix(raw) {
                 String(value),
               ]),
             )
-          : {},
+          : {};
+    const metadata =
+      agent.metadata && typeof agent.metadata === 'object'
+        ? { ...agent.metadata }
+        : {};
+
+    return {
+      id,
+      argv,
+      env,
+      metadata,
+      fingerprint: fingerprintAgent({ id, argv, env, metadata }),
       timeoutMs:
         Number.isFinite(agent.timeoutMs) && agent.timeoutMs > 0
           ? agent.timeoutMs
@@ -125,7 +199,10 @@ export function validateAgentMatrix(raw) {
   });
 }
 
-function runProcess(argv, { cwd, input = '', env = {}, timeoutMs = 600000 } = {}) {
+function runProcess(
+  argv,
+  { cwd, input = '', env = {}, timeoutMs = 600000 } = {},
+) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
     const child = spawn(argv[0], argv.slice(1), {
@@ -146,8 +223,12 @@ function runProcess(argv, { cwd, input = '', env = {}, timeoutMs = 600000 } = {}
 
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
 
     child.on('error', (error) => {
       clearTimeout(timer);
@@ -177,8 +258,37 @@ function runProcess(argv, { cwd, input = '', env = {}, timeoutMs = 600000 } = {}
   });
 }
 
-async function runEvaluatorCommand(command, cwd, timeoutMs) {
-  return runProcess(['bash', '-lc', command], { cwd, timeoutMs });
+async function materializeEvaluatorFiles(files, repoDir) {
+  const repoRoot = resolve(repoDir) + sep;
+
+  for (const file of files) {
+    const target = resolve(repoDir, file.path);
+    if (!target.startsWith(repoRoot)) {
+      throw new Error(
+        'evaluator file path escaped the benchmark worktree: ' + file.path,
+      );
+    }
+
+    await mkdir(dirname(target), { recursive: true });
+    try {
+      await writeFile(target, file.content, {
+        encoding: 'utf8',
+        flag: 'wx',
+      });
+    } catch (error) {
+      if (error && error.code === 'EEXIST') {
+        throw new Error(
+          'evaluator file would overwrite agent-visible repository content: ' +
+            file.path,
+        );
+      }
+      throw error;
+    }
+  }
+}
+
+async function runEvaluatorCommand(argv, cwd, timeoutMs) {
+  return runProcess(argv, { cwd, timeoutMs });
 }
 
 function githubUrl(repo) {
@@ -194,7 +304,14 @@ export async function runBenchmarkTask(task, agent) {
 
   try {
     const clone = await runProcess(
-      ['git', 'clone', '--quiet', '--no-checkout', task.repoUrl ?? githubUrl(task.repo), repoDir],
+      [
+        'git',
+        'clone',
+        '--quiet',
+        '--no-checkout',
+        task.repoUrl ?? githubUrl(task.repo),
+        repoDir,
+      ],
       { timeoutMs: 300000 },
     );
     if (clone.exitCode !== 0) {
@@ -202,14 +319,28 @@ export async function runBenchmarkTask(task, agent) {
     }
 
     const checkout = await runProcess(
-      ['git', '-C', repoDir, 'checkout', '--quiet', '--detach', task.baseCommit],
+      [
+        'git',
+        '-C',
+        repoDir,
+        'checkout',
+        '--quiet',
+        '--detach',
+        task.baseCommit,
+      ],
       { timeoutMs: 120000 },
     );
     if (checkout.exitCode !== 0) {
       throw new Error('git checkout failed: ' + checkout.stderr.trim());
     }
 
-    const clean = await runProcess(['git', '-C', repoDir, 'status', '--porcelain']);
+    const clean = await runProcess([
+      'git',
+      '-C',
+      repoDir,
+      'status',
+      '--porcelain',
+    ]);
     if (clean.stdout.trim() !== '') {
       throw new Error('benchmark workspace is not clean before agent run');
     }
@@ -218,7 +349,7 @@ export async function runBenchmarkTask(task, agent) {
       task.prompt,
       '',
       'Work only inside the current repository.',
-      'Do not run or inspect hidden benchmark evaluator commands.',
+      'Hidden evaluator assets do not exist in the worktree while you run.',
       'Make the smallest correct patch and leave changes in the worktree.',
     ].join('\n');
 
@@ -229,8 +360,17 @@ export async function runBenchmarkTask(task, agent) {
       timeoutMs: agent.timeoutMs,
     });
 
-    const diff = await runProcess(['git', '-C', repoDir, 'diff', '--binary', '--no-ext-diff']);
+    const diff = await runProcess([
+      'git',
+      '-C',
+      repoDir,
+      'diff',
+      '--binary',
+      '--no-ext-diff',
+    ]);
     const changed = diff.stdout.trim() !== '';
+
+    await materializeEvaluatorFiles(task.evaluator.files, repoDir);
 
     const evaluatorRuns = [];
     for (const command of task.evaluator.commands) {
@@ -240,7 +380,7 @@ export async function runBenchmarkTask(task, agent) {
         task.evaluator.timeoutMs,
       );
       evaluatorRuns.push({
-        commandHash: await hashText(command),
+        commandHash: await hashText(JSON.stringify(command)),
         exitCode: result.exitCode,
         timedOut: result.timedOut,
         durationMs: result.durationMs,
@@ -252,14 +392,17 @@ export async function runBenchmarkTask(task, agent) {
       changed &&
       agentRun.exitCode === 0 &&
       !agentRun.timedOut &&
-      evaluatorRuns.every((result) => result.exitCode === 0 && !result.timedOut);
+      evaluatorRuns.every(
+        (result) => result.exitCode === 0 && !result.timedOut,
+      );
 
     return {
-      schema: 'archeagent.provider-benchmark-run.v1',
+      schema: 'archeagent.provider-benchmark-run.v2',
       taskId: task.id,
       repo: task.repo,
       baseCommit: task.baseCommit,
       agentId: agent.id,
+      agentFingerprint: agent.fingerprint,
       passed,
       changed,
       agentExitCode: agentRun.exitCode,
@@ -267,6 +410,7 @@ export async function runBenchmarkTask(task, agent) {
       agentDurationMs: agentRun.durationMs,
       patchSha256: changed ? await hashText(diff.stdout) : null,
       patchBytes: Buffer.byteLength(diff.stdout),
+      evaluatorFilesInjected: task.evaluator.files.length,
       evaluatorRuns,
       recordedAt: new Date().toISOString(),
     };
@@ -276,7 +420,6 @@ export async function runBenchmarkTask(task, agent) {
 }
 
 async function hashText(text) {
-  const { createHash } = await import('node:crypto');
   return createHash('sha256').update(text).digest('hex');
 }
 

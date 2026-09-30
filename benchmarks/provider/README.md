@@ -2,57 +2,111 @@
 
 This directory is Archeagent's real-agent benchmark harness. It is intentionally separate from the deterministic synthetic routing benchmark.
 
-## What it measures
+## Integrity model
 
-Each benchmark task pins a real repository and base commit, gives the coding agent only the issue prompt, and keeps evaluator commands outside the prompt. The harness:
+A benchmark result is only useful if the coding agent cannot inspect its hidden evaluator and if reruns cannot silently replace failed first attempts.
 
-1. clones the repository at the pinned commit;
-2. runs the configured coding agent in that worktree;
-3. captures the produced Git diff;
-4. runs the hidden evaluator commands independently;
-5. records pass/fail, runtime, patch hash and evaluator receipts in an append-only JSONL ledger.
+The v2 harness therefore enforces:
 
-This makes model confidence irrelevant. The unit of truth is an executable patch against a pinned repository state.
+1. each task pins a repository and base commit;
+2. the agent sees only the issue prompt and normal repository state;
+3. hidden evaluator files do not exist in the worktree while the agent is running;
+4. hidden evaluator files are injected only after the agent process exits;
+5. evaluator commands are argv arrays executed with shell=false;
+6. evaluator paths may not escape the worktree or overwrite agent-visible repository content;
+7. the produced patch is captured before evaluator injection;
+8. agent executable identity is fingerprinted from id, argv, environment-variable names and metadata;
+9. the append-only ledger keeps every attempt;
+10. published primary metrics use the first recorded task+agent attempt, not a later retry.
 
 ## Dataset format
 
 One JSON object per line:
 
-```json
-{"id":"django__django-12345","repo":"django/django","baseCommit":"<40-char-sha>","prompt":"<issue text>","evaluator":{"commands":["python -m pytest path/to/hidden_test.py"],"timeoutMs":600000},"metadata":{"source":"swe-bench"}}
-```
+~~~json
+{
+  "id": "django__django-12345",
+  "repo": "django/django",
+  "baseCommit": "<40-char-sha>",
+  "prompt": "<issue text>",
+  "evaluator": {
+    "commands": [
+      ["python", "-m", "pytest", "-q", "hidden/test_regression.py"]
+    ],
+    "files": [
+      {
+        "path": "hidden/test_regression.py",
+        "content": "<hidden evaluator source>"
+      }
+    ],
+    "timeoutMs": 600000
+  },
+  "metadata": {
+    "source": "swe-bench"
+  }
+}
+~~~
 
-The recommended source is a locally materialized SWE-bench Verified/Lite selection or an internal issue corpus. Large third-party datasets are not vendored into this repository.
+Evaluator files are benchmark-authority material. They are loaded by the harness but not placed in the repository until after the agent exits.
+
+Large third-party datasets are not vendored into this repository.
 
 ## Agent matrix
 
 Agent commands are arrays, never shell strings:
 
-```json
+~~~json
 [
-  {"id":"codex","argv":["codex","exec","-"],"timeoutMs":900000},
-  {"id":"claude","argv":["claude","-p"],"timeoutMs":900000},
-  {"id":"gemini","argv":["gemini"],"timeoutMs":900000},
-  {"id":"local","argv":["your-local-agent","--stdin"],"timeoutMs":900000}
+  {
+    "id": "codex",
+    "argv": ["codex", "exec", "-"],
+    "metadata": { "provider": "openai", "model": "codex" },
+    "timeoutMs": 900000
+  }
 ]
-```
+~~~
 
-Use the exact CLI invocation installed in the benchmark environment. Secrets stay in environment variables consumed by those tools; they are never written to the ledger.
+The harness records a SHA-256 fingerprint for each agent identity. Reusing the same agent id with a different executable identity causes the report stage to fail rather than silently mixing results.
+
+Secrets must stay in environment variables consumed by the provider CLI. Secret values are not written to the ledger and are not part of the identity fingerprint; only environment-variable names are included.
 
 ## Run
 
-```bash
+~~~bash
 node benchmarks/provider/run.mjs \
   --dataset=/secure/path/tasks.jsonl \
   --agents=/secure/path/agents.json \
   --count=100 \
   --ledger=benchmarks/provider/results/living-benchmark.jsonl
-```
+~~~
 
-The ledger is the living benchmark. New runs append evidence rather than overwriting history.
+New attempts append to the ledger. Existing records are never overwritten.
 
-## Integrity
+## Report
 
-`pnpm benchmark:provider:validate` validates parser, sampling, configuration and fixture assumptions without calling external providers or spending money.
+~~~bash
+node benchmarks/provider/report.mjs \
+  --ledger=benchmarks/provider/results/living-benchmark.jsonl \
+  --out=benchmarks/provider/results/summary.json
+~~~
+
+Primary pass rates are computed from the first recorded attempt for each taskId+agentId pair. Later retries are counted separately and cannot improve the primary score.
+
+The report also emits:
+
+- harness-error rate;
+- average agent runtime;
+- average evaluator runtime;
+- average patch bytes;
+- pairwise agent wins on commonly attempted tasks;
+- retry count;
+- pinned-state integrity checks;
+- agent-identity integrity checks.
+
+Harness errors count as failed primary runs. They are never silently dropped.
+
+## Verification
+
+pnpm benchmark:provider:validate validates parser, sampling, agent fingerprinting, first-attempt reporting and fixture assumptions without calling external providers or spending money.
 
 A provider-backed result is not claimed until real agent commands and executable real-repository evaluator tasks have actually been run.

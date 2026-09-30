@@ -43,11 +43,12 @@ for (const task of tasks) {
     } catch (error) {
       failures += 1;
       const record = {
-        schema: 'archeagent.provider-benchmark-run.v1',
+        schema: 'archeagent.provider-benchmark-run.v2',
         taskId: task.id,
         repo: task.repo,
         baseCommit: task.baseCommit,
         agentId: agent.id,
+        agentFingerprint: agent.fingerprint,
         passed: false,
         harnessError: error instanceof Error ? error.message : String(error),
         recordedAt: new Date().toISOString(),
