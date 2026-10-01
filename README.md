@@ -201,7 +201,7 @@ The harness is implemented and locally validated. It now has two real-task autho
 - the original SWE-Rebench development pilot, whose first-attempt failures remain preserved;
 - an R2E-Gym hidden-authority path that freezes fresh tasks before execution and evaluates candidate patches in post-agent, network-disabled authority containers.
 
-For r2e-fresh-v1, 10 fresh tasks passed base/gold authority controls before model execution. The frozen local qwen2.5-14b-am primary ledger recorded 1 pass and 9 failures with zero retries. Authority v2 subsequently added candidate test-path rejection and explicit changed-path receipts; it does not rewrite the historical v1 score.
+For r2e-fresh-v1, 10 fresh tasks passed base/gold authority controls before model execution. The frozen local qwen2.5-14b-am primary ledger recorded 1 pass and 9 failures with zero retries. Authority v2 subsequently added candidate test-path rejection and explicit changed-path receipts; it does not rewrite the historical v1 score. A separate r2e-fresh-v2 development baseline recorded 0/10 first-attempt passes with zero retries; its exact final task artifact was later revalidated 10/10 against base/gold authority controls, so it is documented as post-hoc revalidated rather than preregistered.
 
 See benchmarks/provider/README.md for the data contract and evidence bundle.
 
@@ -210,7 +210,7 @@ See benchmarks/provider/README.md for the data contract and evidence bundle.
 The repository contains:
 
 - 27 TypeScript test files;
-- 112 TypeScript tests;
+- 117 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
@@ -221,7 +221,9 @@ The repository contains:
 - deterministic synthetic routing benchmark;
 - a frozen three-task SWE-Rebench pilot manifest and controls;
 - a preserved Qwen primary ledger with 2 scored first attempts, 0 passes, and 0 retries;
-- separate post-pilot diagnostic receipts that do not rewrite the primary ledger.
+- separate post-pilot diagnostic receipts that do not rewrite the primary ledger;
+- a post-hoc exact-revalidated R2E v2 development baseline with 10 frozen first attempts and zero retries;
+- bounded large-source navigation (`read_lines` plus streaming search) so oversized source files no longer hard-crash the local adapter.
 
 Run the complete gate with:
 
@@ -242,6 +244,6 @@ It does not currently claim:
 - automatic high-risk merge authority;
 - universal formal verification.
 
-The next empirical stage is a new frozen, unseen R2E-Gym corpus evaluated across multiple provider agents with the same hidden authority contract. Those real outcomes can then be fed back into Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
+The next empirical stage is a fresh R2E-Gym v3 corpus whose exact final task artifact passes authority controls before any model execution, followed by the same unseen corpus across multiple provider agents. Those real outcomes can then feed Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
 
 See docs/ARCHITECTURE.md and docs/RESEARCH_POSITIONING.md.

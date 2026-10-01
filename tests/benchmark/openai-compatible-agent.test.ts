@@ -395,6 +395,218 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
+  it('recovers from oversized read_file and points the model to bounded reading', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(
+        join(dir, 'huge.py'),
+        'start\n' + 'x'.repeat(70_000) + '\nneedle\n',
+        'utf8',
+      );
+
+      const replies = [
+        { action: 'read_file', path: 'huge.py' },
+        { action: 'finish', summary: 'saw size guidance' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect huge.py.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            expect(messages.at(-1)?.content).toContain('FILE_TOO_LARGE');
+            expect(messages.at(-1)?.content).toContain('read_lines');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'FILE_TOO_LARGE',
+      });
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('reads bounded line windows from files larger than the full-read limit', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      const lines = Array.from(
+        { length: 2500 },
+        (_, index) => `line-${index + 1}-${'z'.repeat(40)}`,
+      );
+      lines[1799] = 'TARGET-LINE-1800';
+
+      await writeFile(
+        join(dir, 'huge.py'),
+        lines.join('\n') + '\n',
+        'utf8',
+      );
+
+      const replies = [
+        {
+          action: 'read_lines',
+          path: 'huge.py',
+          start_line: 1798,
+          end_line: 1802,
+        },
+        { action: 'finish', summary: 'found target window' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect lines around 1800.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('TARGET-LINE-1800');
+            expect(payload).toContain('"startLine":1798');
+            expect(payload).toContain('"endLine":1802');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+      expect(result.transcript[0]?.result).toMatchObject({
+        path: 'huge.py',
+        startLine: 1798,
+        endLine: 1802,
+      });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('finds text inside oversized files without exposing the whole file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      const lines = Array.from(
+        { length: 3000 },
+        (_, index) => `ordinary-${index + 1}-${'q'.repeat(30)}`,
+      );
+      lines[2400] = 'UNIQUE_OVERSIZED_NEEDLE';
+
+      await writeFile(
+        join(dir, 'huge.txt'),
+        lines.join('\n') + '\n',
+        'utf8',
+      );
+
+      const replies = [
+        { action: 'search_text', query: 'UNIQUE_OVERSIZED_NEEDLE' },
+        { action: 'finish', summary: 'found it' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Find the unique needle.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('UNIQUE_OVERSIZED_NEEDLE');
+            expect(payload).toContain('"line":2401');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('can replace exact text in an oversized file after a bounded read', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      const lines = Array.from(
+        { length: 2500 },
+        (_, index) => `row-${index + 1}-${'m'.repeat(40)}`,
+      );
+      lines[1999] = 'def old_callback(ctx, value):';
+
+      await writeFile(
+        join(dir, 'huge.py'),
+        lines.join('\n') + '\n',
+        'utf8',
+      );
+
+      const replies = [
+        {
+          action: 'read_lines',
+          path: 'huge.py',
+          start_line: 1998,
+          end_line: 2002,
+        },
+        {
+          action: 'replace_text',
+          path: 'huge.py',
+          old_text: 'def old_callback(ctx, value):',
+          new_text: 'def old_callback(ctx, param, value):',
+        },
+        { action: 'finish', summary: 'updated callback' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Update the callback signature.',
+        maxSteps: 5,
+        complete: async () => JSON.stringify(replies[index++]),
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(await readFile(join(dir, 'huge.py'), 'utf8')).toContain(
+        'def old_callback(ctx, param, value):',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects invalid read_lines ranges and path escapes', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.txt'), 'one\ntwo\n', 'utf8');
+
+      await expect(runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Read too much.',
+        maxSteps: 2,
+        complete: async () => JSON.stringify({
+          action: 'read_lines',
+          path: 'module.txt',
+          start_line: 1,
+          end_line: 1000,
+        }),
+      })).rejects.toThrow(/read_lines/i);
+
+      await expect(runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Escape.',
+        maxSteps: 2,
+        complete: async () => JSON.stringify({
+          action: 'read_lines',
+          path: '../secret.txt',
+          start_line: 1,
+          end_line: 5,
+        }),
+      })).rejects.toThrow(/inside the repository/i);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns a recoverable tool error when the model reads a missing file', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {

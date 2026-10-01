@@ -1,0 +1,17 @@
+{
+  "schema": "archeagent.r2e-fresh-v2-primary-summary.v1",
+  "corpus": "r2e-fresh-v2",
+  "agentId": "qwen2.5-14b-am-r2e-fresh-v2-primary",
+  "agentFingerprint": "eaa7bfcc09aadf2f7924cff28cb3b8757713082edd1eeb0dcc75620cd21fa2d4",
+  "runs": 10,
+  "passes": 0,
+  "failures": 10,
+  "passRate": 0.0,
+  "retries": 0,
+  "changedCandidates": 4,
+  "unchangedCandidates": 6,
+  "largeFileReadCrashes": 3,
+  "testPathAuthorityRejections": 2,
+  "primaryLedgerSha256": "fe8860d47a3561fcb7b989cd2428841475bdc77b3cdfbc07c969cc1bc64461ab",
+  "methodology": "Frozen first attempts are preserved exactly; no retry replaces a primary result."
+}

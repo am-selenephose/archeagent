@@ -1,0 +1,20 @@
+[
+  {
+    "id":"qwen2.5-14b-am-r2e-fresh-v2-primary",
+    "argv":["node","/tmp/archeagent-r2e-fresh-v2/benchmarks/provider/agents/openai-compatible-agent.mjs"],
+    "env":{
+      "ARCHEAGENT_AGENT_BASE_URL":"http://127.0.0.1:11436/v1",
+      "ARCHEAGENT_AGENT_MODEL":"qwen2.5-14b-am",
+      "ARCHEAGENT_AGENT_MAX_STEPS":"32"
+    },
+    "metadata":{
+      "provider":"local-llama.cpp",
+      "model":"qwen2.5-14b-am",
+      "study":"r2e-fresh-v2",
+      "authorityVersion":"v2-self-contained",
+      "corpusManifestSha256":"261ea32c2b25dd6976952011164c8d427e8773a11d4d2cec6ef62d983975b27b",
+      "authorityTasksSha256":"a3af6a585c023d8c14b7a04db3ff3d1d29e085b179421486a508b71ceacb867a"
+    },
+    "timeoutMs":600000
+  }
+]

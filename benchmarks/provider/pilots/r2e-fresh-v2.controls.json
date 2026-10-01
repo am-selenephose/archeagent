@@ -1,0 +1,190 @@
+{
+  "schema": "archeagent.r2e-control-summary.v3",
+  "corpus": "r2e-fresh-v2",
+  "authorityTasksSha256": "a3af6a585c023d8c14b7a04db3ff3d1d29e085b179421486a508b71ceacb867a",
+  "taskCount": 10,
+  "validCount": 10,
+  "allValid": true,
+  "tasks": [
+    {
+      "taskId": "r2e-gym__aiohttp__210bcbb8ee0c3ce34664836403a07a0b97123696",
+      "repo": "aio-libs/aiohttp",
+      "baseCommit": "8607d75aab599d8350eb11661fe4c99374b83f30",
+      "targetCommit": "210bcbb8ee0c3ce34664836403a07a0b97123696",
+      "negative": {
+        "matched": false,
+        "statusCount": 149
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 149
+      },
+      "expectedStatusCount": 149,
+      "valid": true,
+      "durationMs": 16413,
+      "receiptSha256": "050749eb66d98feac4eb4fc5bed6234539843c4adaeab3eb4a29b613e67041cd"
+    },
+    {
+      "taskId": "r2e-gym__coveragepy__694435b844760ca0443cf87bf73a537f06c37d7d",
+      "repo": "nedbat/coveragepy",
+      "baseCommit": "99f8007f4210b3117c0bfc963ad6873e9b263408",
+      "targetCommit": "694435b844760ca0443cf87bf73a537f06c37d7d",
+      "negative": {
+        "matched": false,
+        "statusCount": 27
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 27
+      },
+      "expectedStatusCount": 27,
+      "valid": true,
+      "durationMs": 2504,
+      "receiptSha256": "03f4ee6b29059af508a7984e456a6f7593cf77cbeca9758ac631fa03165a4b8d"
+    },
+    {
+      "taskId": "r2e-gym__datalad__d6c9d4270020ec244bd1b722a12fc1032c26e473",
+      "repo": "datalad/datalad",
+      "baseCommit": "3bfc1c7478cf015d73bb7db3e6359d7a527ab297",
+      "targetCommit": "d6c9d4270020ec244bd1b722a12fc1032c26e473",
+      "negative": {
+        "matched": false,
+        "statusCount": 11
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 11
+      },
+      "expectedStatusCount": 11,
+      "valid": true,
+      "durationMs": 2910,
+      "receiptSha256": "280440bb8629e67e4e570cf5fa4984666a69f79b781362a86a6ded7da909a182"
+    },
+    {
+      "taskId": "r2e-gym__numpy__0655cb9e24cff97642c70a98c5258bcbe7a6c3d3",
+      "repo": "numpy/numpy",
+      "baseCommit": "17bae7c3f53d757144403ae09897e32f91a31d74",
+      "targetCommit": "0655cb9e24cff97642c70a98c5258bcbe7a6c3d3",
+      "negative": {
+        "matched": false,
+        "statusCount": 4074
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 4074
+      },
+      "expectedStatusCount": 4074,
+      "valid": true,
+      "durationMs": 21683,
+      "receiptSha256": "e9da8cf0d88d47e9c56bde6fbf6fc0712ae6de33b558a9eeb8b92ab93a95933f"
+    },
+    {
+      "taskId": "r2e-gym__orange3__7d3c11f1f415a03376ff292bde3e7b8458902f75",
+      "repo": "biolab/orange3",
+      "baseCommit": "9eb649075e83cfea90aa2961abae8c8e00fcbea6",
+      "targetCommit": "7d3c11f1f415a03376ff292bde3e7b8458902f75",
+      "negative": {
+        "matched": false,
+        "statusCount": 78
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 78
+      },
+      "expectedStatusCount": 78,
+      "valid": true,
+      "durationMs": 20571,
+      "receiptSha256": "b668aea7eb08a5edad577220fd9b43fe153187764232bf6ddc50d83e2ded2606"
+    },
+    {
+      "taskId": "r2e-gym__pandas__bb2c10e246d384c2a06adea6bdb2c4b84537de73",
+      "repo": "pandas-dev/pandas",
+      "baseCommit": "254e26001223b9c4330ce33b9bfaab20c7b5401c",
+      "targetCommit": "bb2c10e246d384c2a06adea6bdb2c4b84537de73",
+      "negative": {
+        "matched": false,
+        "statusCount": 100
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 100
+      },
+      "expectedStatusCount": 100,
+      "valid": true,
+      "durationMs": 5542,
+      "receiptSha256": "884e6ff33c2ee4aa5cf9eaea2cf49d2422021a20fa140524e8cc5376a9d553e4"
+    },
+    {
+      "taskId": "r2e-gym__pillow__dfb48ff297aa2b227a98f20ff0ae5a0009644ad3",
+      "repo": "python-pillow/Pillow",
+      "baseCommit": "1b6723967440cf8474a9bd1e1c394c90c5c2f986",
+      "targetCommit": "dfb48ff297aa2b227a98f20ff0ae5a0009644ad3",
+      "negative": {
+        "matched": false,
+        "statusCount": 98
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 98
+      },
+      "expectedStatusCount": 98,
+      "valid": true,
+      "durationMs": 3190,
+      "receiptSha256": "45d7a4fca85da9d455c25e44ec13a9e0a68af9d30b0175e0e824c31f8a4874fb"
+    },
+    {
+      "taskId": "r2e-gym__pyramid__796af58e3741a03cbddbaed19def5984fe8601e4",
+      "repo": "Pylons/pyramid",
+      "baseCommit": "2d66691349b5042a0316c3f051c3a6d7edddc4a1",
+      "targetCommit": "796af58e3741a03cbddbaed19def5984fe8601e4",
+      "negative": {
+        "matched": false,
+        "statusCount": 877
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 877
+      },
+      "expectedStatusCount": 877,
+      "valid": true,
+      "durationMs": 9737,
+      "receiptSha256": "553b00dacdc47f566a7482247fcd2cae1abe75fa8b3344fe8f34dd5eb6d8e7f3"
+    },
+    {
+      "taskId": "r2e-gym__scrapy__75450e75d269b2a2b00b6303af1033df1f69cc67",
+      "repo": "scrapy/scrapy",
+      "baseCommit": "26ebdbf4efd53bcb48da749576420c9f2fa6e28c",
+      "targetCommit": "75450e75d269b2a2b00b6303af1033df1f69cc67",
+      "negative": {
+        "matched": false,
+        "statusCount": 17
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 17
+      },
+      "expectedStatusCount": 17,
+      "valid": true,
+      "durationMs": 25785,
+      "receiptSha256": "84554bb6a8f5aa8d6c1a40ecfdb790d9c46f1fb467212e30517f0d02721e904d"
+    },
+    {
+      "taskId": "r2e-gym__tornado__86225304aee403c02f44ee59b4a76a14454eb926",
+      "repo": "tornadoweb/tornado",
+      "baseCommit": "975e9168560cc03f6210d0d3aab10c870bd47080",
+      "targetCommit": "86225304aee403c02f44ee59b4a76a14454eb926",
+      "negative": {
+        "matched": false,
+        "statusCount": 46
+      },
+      "gold": {
+        "matched": true,
+        "statusCount": 46
+      },
+      "expectedStatusCount": 46,
+      "valid": true,
+      "durationMs": 6827,
+      "receiptSha256": "ab48b9ec978d8f70b418f71064326ad3ffd2b1bd9586c47b2799b6eef1e9a111"
+    }
+  ]
+}

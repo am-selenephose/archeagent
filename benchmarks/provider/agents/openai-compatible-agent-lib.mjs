@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs';
 import {
   lstat,
   mkdir,
@@ -6,11 +7,13 @@ import {
   realpath,
   writeFile,
 } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 const MAX_FILE_BYTES = 64 * 1024;
 const MAX_LIST_FILES = 600;
 const MAX_SEARCH_RESULTS = 80;
+const MAX_READ_LINES = 400;
 const MAX_MODEL_CONTEXT_CHARS = 24_000;
 const MAX_MODEL_TOOL_RESULT_CHARS = 10_000;
 
@@ -108,9 +111,110 @@ async function readRepoFile(cwd, path) {
   const { target } = await assertNoSymlinkEscape(cwd, safe);
   const content = await readFile(target);
   if (content.byteLength > MAX_FILE_BYTES) {
-    throw new Error('file exceeds local-agent read limit: ' + safe);
+    const error = new Error(
+      'file exceeds local-agent read limit: ' +
+        safe +
+        '; use search_text or read_lines',
+    );
+    error.code = 'FILE_TOO_LARGE';
+    error.bytes = content.byteLength;
+    throw error;
   }
   return content.toString('utf8');
+}
+
+async function readRepoLines(cwd, path, startLine, endLine) {
+  const safe = validateRepoRelativePath(path);
+
+  if (
+    !Number.isInteger(startLine) ||
+    !Number.isInteger(endLine) ||
+    startLine < 1 ||
+    endLine < startLine ||
+    endLine - startLine + 1 > MAX_READ_LINES
+  ) {
+    throw new Error(
+      'read_lines requires 1-based integer start_line/end_line with at most ' +
+        MAX_READ_LINES +
+        ' lines',
+    );
+  }
+
+  const { target } = await assertNoSymlinkEscape(cwd, safe);
+  const stream = createReadStream(target, { encoding: 'utf8' });
+  const reader = createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  });
+
+  const selected = [];
+  let lineNumber = 0;
+  let reachedRequestedEnd = false;
+
+  try {
+    for await (const line of reader) {
+      lineNumber += 1;
+      if (lineNumber < startLine) continue;
+      if (lineNumber > endLine) {
+        reachedRequestedEnd = true;
+        break;
+      }
+      selected.push(line);
+      if (lineNumber === endLine) {
+        reachedRequestedEnd = true;
+        break;
+      }
+    }
+  } finally {
+    reader.close();
+    stream.destroy();
+  }
+
+  const actualEndLine =
+    selected.length > 0 ? startLine + selected.length - 1 : startLine - 1;
+
+  return {
+    path: safe,
+    startLine,
+    endLine: actualEndLine,
+    requestedEndLine: endLine,
+    content: selected.length > 0 ? selected.join('\n') + '\n' : '',
+    eof: !reachedRequestedEnd,
+    nextStartLine: reachedRequestedEnd ? endLine + 1 : null,
+  };
+}
+
+async function searchRepoFile(cwd, path, query, remaining) {
+  const safe = validateRepoRelativePath(path);
+  const { target } = await assertNoSymlinkEscape(cwd, safe);
+  const stream = createReadStream(target, { encoding: 'utf8' });
+  const reader = createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  });
+
+  const matches = [];
+  let lineNumber = 0;
+
+  try {
+    for await (const line of reader) {
+      lineNumber += 1;
+      if (line.includes('\u0000')) break;
+      if (!line.includes(query)) continue;
+
+      matches.push({
+        path: safe,
+        line: lineNumber,
+        text: line.slice(0, 500),
+      });
+      if (matches.length >= remaining) break;
+    }
+  } finally {
+    reader.close();
+    stream.destroy();
+  }
+
+  return matches;
 }
 
 async function searchText(cwd, query) {
@@ -124,19 +228,15 @@ async function searchText(cwd, query) {
   for (const path of files) {
     if (matches.length >= MAX_SEARCH_RESULTS) break;
     try {
-      const content = await readRepoFile(cwd, path);
-      const lines = content.split(/\r?\n/);
-      for (let index = 0; index < lines.length; index += 1) {
-        if (!lines[index].includes(query)) continue;
-        matches.push({
-          path,
-          line: index + 1,
-          text: lines[index].slice(0, 500),
-        });
-        if (matches.length >= MAX_SEARCH_RESULTS) break;
-      }
+      const found = await searchRepoFile(
+        cwd,
+        path,
+        query,
+        MAX_SEARCH_RESULTS - matches.length,
+      );
+      matches.push(...found);
     } catch {
-      // Binary, oversized, or otherwise unreadable files are ignored for search.
+      // Binary, disappearing, or otherwise unreadable files are ignored for search.
     }
   }
 
@@ -172,7 +272,8 @@ async function replaceRepoText(cwd, path, oldText, newText) {
     throw error;
   }
 
-  const current = await readRepoFile(cwd, safe);
+  const { target } = await assertNoSymlinkEscape(cwd, safe);
+  const current = await readFile(target, 'utf8');
   const first = current.indexOf(oldText);
   const last = current.lastIndexOf(oldText);
 
@@ -194,7 +295,6 @@ async function replaceRepoText(cwd, path, oldText, newText) {
     current.slice(0, first) +
     newText +
     current.slice(first + oldText.length);
-  const { target } = await assertNoSymlinkEscape(cwd, safe);
   await writeFile(target, next, 'utf8');
 
   return {
@@ -271,6 +371,13 @@ async function applyAction(cwd, action) {
         path: validateRepoRelativePath(action.path),
         content: await readRepoFile(cwd, action.path),
       };
+    case 'read_lines':
+      return readRepoLines(
+        cwd,
+        action.path,
+        action.start_line,
+        action.end_line,
+      );
     case 'search_text':
       return {
         query: action.query,
@@ -297,7 +404,7 @@ async function applyAction(cwd, action) {
 
 function recoverableToolError(action, error) {
   if (
-    action?.action === 'read_file' &&
+    (action?.action === 'read_file' || action?.action === 'read_lines') &&
     error &&
     typeof error === 'object' &&
     error.code === 'ENOENT'
@@ -306,6 +413,22 @@ function recoverableToolError(action, error) {
       toolError: true,
       code: 'ENOENT',
       message: 'file not found: ' + validateRepoRelativePath(action.path),
+    };
+  }
+
+  if (
+    action?.action === 'read_file' &&
+    error &&
+    typeof error === 'object' &&
+    error.code === 'FILE_TOO_LARGE'
+  ) {
+    return {
+      toolError: true,
+      code: 'FILE_TOO_LARGE',
+      bytes: Number.isInteger(error.bytes) ? error.bytes : null,
+      message:
+        error.message +
+        '. Use search_text to locate relevant code and read_lines for a bounded window.',
     };
   }
 
@@ -395,7 +518,7 @@ function serializeActionForModel(action) {
 
 function serializeToolResultForModel(action, result) {
   if (
-    action.action === 'read_file' &&
+    (action.action === 'read_file' || action.action === 'read_lines') &&
     typeof result?.content === 'string'
   ) {
     const compacted = compactTextForModel(
@@ -406,6 +529,15 @@ function serializeToolResultForModel(action, result) {
     return JSON.stringify({
       toolResult: {
         path: result.path,
+        ...(action.action === 'read_lines'
+          ? {
+              startLine: result.startLine,
+              endLine: result.endLine,
+              requestedEndLine: result.requestedEndLine,
+              eof: result.eof,
+              nextStartLine: result.nextStartLine,
+            }
+          : {}),
         content: compacted.text,
         toolResultTruncated: compacted.truncated,
         originalChars: compacted.originalChars,
@@ -474,12 +606,14 @@ function systemPrompt() {
     'Allowed actions:',
     '{"action":"list_files"}',
     '{"action":"read_file","path":"relative/path"}',
+    '{"action":"read_lines","path":"relative/path","start_line":1,"end_line":120}',
     '{"action":"search_text","query":"literal text"}',
     '{"action":"replace_text","path":"relative/path","old_text":"exact old text","new_text":"exact replacement"}',
     '{"action":"write_file","path":"relative/path","content":"complete new file content"}',
     '{"action":"finish","summary":"what changed"}',
     'You have no shell tool. Do not ask to execute commands.',
     'Inspect before editing. Make the smallest correct change.',
+    'If read_file says FILE_TOO_LARGE, use search_text and read_lines instead of requesting the whole file.',
     'Prefer replace_text for small edits. Use write_file only when replacing or creating an entire file.',
     'Never attempt to access .git or paths outside the repository.',
   ].join('\n');

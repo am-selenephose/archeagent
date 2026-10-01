@@ -133,12 +133,13 @@ The model can only request:
 
 - list_files
 - read_file
+- read_lines
 - search_text
 - replace_text
 - write_file
 - finish
 
-Repository traversal and symlink escapes are rejected. replace_text requires one exact unique match, so small fixes do not require retransmitting an entire source file. Hidden evaluator assets are still injected by the benchmark harness only after the model process exits.
+Repository traversal and symlink escapes are rejected. `read_file` remains bounded; oversized files return a recoverable `FILE_TOO_LARGE` result and can be inspected through streaming `search_text` plus bounded 1-based `read_lines` windows. `replace_text` can edit an exact unique match in a large file without exposing the full file to the model. Hidden evaluator assets are still injected by the benchmark harness only after the model process exits.
 
 Environment:
 
@@ -209,6 +210,7 @@ The local adapter intentionally exposes no shell tool to the model. Allowed mode
 
 - list_files
 - read_file
+- read_lines
 - search_text
 - replace_text
 - write_file
@@ -346,4 +348,40 @@ Evidence:
 The public repository intentionally does not contain the frozen raw authority task JSONL because that artifact includes hidden expected status maps.
 
 This is a local-model baseline and benchmark-integrity result, not a ranking of commercial model providers.
+
+### Fresh v2 development baseline
+
+A second balanced 10-task R2E corpus was selected from rows not used by the v1 primary corpus. Its hidden authority task JSONL remains withheld because it contains expected status maps.
+
+The preserved local-Qwen primary result is:
+
+- primary runs: 10
+- passes: 0
+- failures: 10
+- retries: 0
+- changed candidates: 4
+- initial large-file adapter crashes: 3
+
+The final task artifact SHA-256 is `a3af6a585c023d8c14b7a04db3ff3d1d29e085b179421486a508b71ceacb867a`. Exact base/gold controls for that final artifact were revalidated after the primary run and all 10 passed the required pattern: base status map did not match the oracle, gold status map matched exactly. Because this exact-artifact revalidation happened post-primary, v2 is labeled a development baseline rather than a preregistered comparative benchmark.
+
+A post-primary diagnostic then reran only the three tasks that had previously hard-crashed on oversized source reads after adding bounded large-file navigation:
+
+- NumPy: no read-limit crash; exhausted the 32-step diagnostic budget without a patch.
+- Pandas: no read-limit crash; exhausted the 32-step diagnostic budget without a patch.
+- Pillow: produced a 514-byte source-only patch, but the hidden authority rejected it semantically.
+
+The diagnostic does not change the frozen 0/10 primary score. It shows that the large-file adapter failure class was removed and exposes the next bottlenecks as planning budget and model semantics.
+
+Public evidence:
+
+- `benchmarks/provider/pilots/r2e-fresh-v2.manifest.json`
+- `benchmarks/provider/pilots/r2e-fresh-v2.exclusions.json`
+- `benchmarks/provider/pilots/r2e-fresh-v2.controls.json`
+- `benchmarks/provider/pilots/r2e-fresh-v2.summary.json`
+- `benchmarks/provider/pilots/r2e-fresh-v2.largefile-diagnostic.summary.json`
+- `benchmarks/provider/results/r2e-fresh-v2-qwen-primary.jsonl`
+- `benchmarks/provider/results/r2e-fresh-v2-qwen-summary.json`
+- `benchmarks/provider/results/r2e-fresh-v2-largefile-diagnostic.jsonl`
+
+The next clean empirical run should use a new unseen v3 corpus with exact final-artifact controls completed before any model attempt.
 

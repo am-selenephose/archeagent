@@ -1,0 +1,95 @@
+{
+  "schema": "archeagent.r2e-fresh-v2-summary.v1",
+  "corpus": "r2e-fresh-v2",
+  "source": {
+    "dataset": "R2E-Gym/R2E-Gym-Lite",
+    "split": "dev_10pr_v1",
+    "selectedRows": 10,
+    "balancedAcrossRepos": true
+  },
+  "artifactHashes": {
+    "manifestSha256": "261ea32c2b25dd6976952011164c8d427e8773a11d4d2cec6ef62d983975b27b",
+    "authorityTasksSha256": "a3af6a585c023d8c14b7a04db3ff3d1d29e085b179421486a508b71ceacb867a",
+    "exactControlSummarySha256": "f97fa76f33789d0a2a321ad69a5c84153188d1bde85e803e1ffb853cdb9075eb",
+    "exclusionsSha256": "3c93ccd498e112abdbaeade818d0bef454bea037dac9ca10049050a61442f6ca",
+    "primaryLedgerSha256": "fe8860d47a3561fcb7b989cd2428841475bdc77b3cdfbc07c969cc1bc64461ab",
+    "diagnosticLedgerSha256": "fe0e2ae0c43d5a981c2e4354e6f59078384545eb3085e2e8d0090191f828f1ca",
+    "agentConfigSha256": "13efe10fc05b3745d4041e95b66e56c2b1fd9cb24d52c9d8cc19026021ac08bd"
+  },
+  "exactAuthorityRevalidation": {
+    "timing": "post-primary",
+    "taskCount": 10,
+    "validCount": 10,
+    "allValid": true,
+    "rule": "base status map must not match the oracle; gold status map must exactly match the oracle"
+  },
+  "primary": {
+    "schema": "archeagent.r2e-fresh-v2-primary-summary.v1",
+    "corpus": "r2e-fresh-v2",
+    "agentId": "qwen2.5-14b-am-r2e-fresh-v2-primary",
+    "agentFingerprint": "eaa7bfcc09aadf2f7924cff28cb3b8757713082edd1eeb0dcc75620cd21fa2d4",
+    "runs": 10,
+    "passes": 0,
+    "failures": 10,
+    "passRate": 0.0,
+    "retries": 0,
+    "changedCandidates": 4,
+    "unchangedCandidates": 6,
+    "largeFileReadCrashes": 3,
+    "testPathAuthorityRejections": 2,
+    "primaryLedgerSha256": "fe8860d47a3561fcb7b989cd2428841475bdc77b3cdfbc07c969cc1bc64461ab",
+    "methodology": "Frozen first attempts are preserved exactly; no retry replaces a primary result."
+  },
+  "postPrimaryLargeFileDiagnostic": {
+    "schema": "archeagent.r2e-postprimary-diagnostic.v1",
+    "corpus": "r2e-fresh-v2",
+    "purpose": "Measure whether bounded large-file navigation removes the primary large-file adapter crash class without rewriting the primary score.",
+    "adapterRevision": "7e75899d0d429f1b37a395590a293e84a5c0e95b",
+    "runs": 3,
+    "passes": 0,
+    "largeFileReadCrashes": 0,
+    "tasks": [
+      {
+        "taskId": "r2e-gym__numpy__0655cb9e24cff97642c70a98c5258bcbe7a6c3d3",
+        "repo": "numpy/numpy",
+        "classification": "step_budget_exhausted_no_patch",
+        "passed": false,
+        "changed": false,
+        "agentExitCode": 3,
+        "agentDurationMs": 134890,
+        "changedPaths": [],
+        "patchBytes": 0,
+        "evaluatorExitCode": 3
+      },
+      {
+        "taskId": "r2e-gym__pandas__bb2c10e246d384c2a06adea6bdb2c4b84537de73",
+        "repo": "pandas-dev/pandas",
+        "classification": "step_budget_exhausted_no_patch",
+        "passed": false,
+        "changed": false,
+        "agentExitCode": 3,
+        "agentDurationMs": 68417,
+        "changedPaths": [],
+        "patchBytes": 0,
+        "evaluatorExitCode": 3
+      },
+      {
+        "taskId": "r2e-gym__pillow__dfb48ff297aa2b227a98f20ff0ae5a0009644ad3",
+        "repo": "python-pillow/Pillow",
+        "classification": "semantic_patch_rejected",
+        "passed": false,
+        "changed": true,
+        "agentExitCode": 0,
+        "agentDurationMs": 11365,
+        "changedPaths": [
+          "src/PIL/GifImagePlugin.py"
+        ],
+        "patchBytes": 514,
+        "evaluatorExitCode": 1
+      }
+    ],
+    "diagnosticLedgerSha256": "fe0e2ae0c43d5a981c2e4354e6f59078384545eb3085e2e8d0090191f828f1ca",
+    "primaryScoreChanged": false
+  },
+  "claimBoundary": "Development baseline only. Exact final-artifact controls were revalidated after the primary run, so this is not presented as a preregistered comparative benchmark."
+}

@@ -1,0 +1,108 @@
+{
+  "schema": "archeagent.r2e-exclusion-manifest.v1",
+  "entries": [
+    {
+      "rowIndex": 1,
+      "repoName": "aiohttp",
+      "repo": "aio-libs/aiohttp",
+      "targetCommit": "d2b52d7c32a744379438c466e68ad2cb471deeba",
+      "baseCommit": "871fedcb014c0e568f4eed3ef5c74ae94c59c936",
+      "dockerImage": "namanjain12/aiohttp_final:d2b52d7c32a744379438c466e68ad2cb471deeba",
+      "problemStatementSha256": "39410a1d72635e9b908e33e763f444bdb859fb8d77a73669dab088f4ee9d832d",
+      "expectedOutputSha256": "013f14a4cc232b823cb96e39b302dd75d98ceb9f9ee71088af3253bfb13f79fd"
+    },
+    {
+      "rowIndex": 10,
+      "repoName": "coveragepy",
+      "repo": "nedbat/coveragepy",
+      "targetCommit": "2094909df35db45ca7a409cc37f38d49c3191d2a",
+      "baseCommit": "181d71c7ae537299a74291e4671bd8b896bcd55d",
+      "dockerImage": "namanjain12/coveragepy_final:2094909df35db45ca7a409cc37f38d49c3191d2a",
+      "problemStatementSha256": "5aefde63ad96f02731b7d53e87c3aace79899bf5b8c505805bc6e87c5c33b837",
+      "expectedOutputSha256": "df9a651f67aa687a5b9e717b8da88d2a2166c5daccc29125a82bf722eb36be14"
+    },
+    {
+      "rowIndex": 20,
+      "repoName": "datalad",
+      "repo": "datalad/datalad",
+      "targetCommit": "4a07fb33f39d1e467b61bc359fd746424950ea4c",
+      "baseCommit": "dd9c4bd2eefc481afb8c825938cc669fef22030f",
+      "dockerImage": "namanjain12/datalad_final:4a07fb33f39d1e467b61bc359fd746424950ea4c",
+      "problemStatementSha256": "73f329b567c93235247f934cc88a97aba74944ed97e1494937dd5e1bf248517b",
+      "expectedOutputSha256": "1aee9cea0944e6c429b10dd274a3876d161dfe8801af87765e2204d243582db7"
+    },
+    {
+      "rowIndex": 30,
+      "repoName": "numpy",
+      "repo": "numpy/numpy",
+      "targetCommit": "67aa4e738bf4298f1ccf0411f8df6116861adab1",
+      "baseCommit": "bdab3b92808efe7514ad288d25d08d7bd5e327d8",
+      "dockerImage": "namanjain12/numpy_final:67aa4e738bf4298f1ccf0411f8df6116861adab1",
+      "problemStatementSha256": "4f2cd9a1d4f42e5af646355603bae8799c7f06e88af7fa33b6a664a5b6c632ac",
+      "expectedOutputSha256": "851b721eba016aa19f6f146902b25721d6e84ae2a431eab07c9b1ac5966799aa"
+    },
+    {
+      "rowIndex": 40,
+      "repoName": "orange3",
+      "repo": "biolab/orange3",
+      "targetCommit": "b5a965e31d82da4134b21b15a62d708cd48e03f4",
+      "baseCommit": "4462394d84f5c53e8982029ff6f53d3366483c8b",
+      "dockerImage": "namanjain12/orange3_final:b5a965e31d82da4134b21b15a62d708cd48e03f4",
+      "problemStatementSha256": "fb8d10487fbf26bf102b7cc579d28e104ef2181d9358fc6a243b3df3e892a946",
+      "expectedOutputSha256": "cd2386314e9b3a3caeeadfe8ec894a57dbe13b3e50a904cb9ccbc09100a4fb19"
+    },
+    {
+      "rowIndex": 50,
+      "repoName": "pandas",
+      "repo": "pandas-dev/pandas",
+      "targetCommit": "6a8055d8a52e1f691acefececa3e7d835f16a062",
+      "baseCommit": "eb6317a3cf45dfeb76f81655310604de029ad596",
+      "dockerImage": "namanjain12/pandas_final:6a8055d8a52e1f691acefececa3e7d835f16a062",
+      "problemStatementSha256": "094e3328e526b7bf5c8351ba9a29fd8e4634230f9c74ce5c6c007683c17d670b",
+      "expectedOutputSha256": "40dd2cf2798007e50b981cb87838e3afd07a8d982d5bdf1d5fa74133a664937d"
+    },
+    {
+      "rowIndex": 60,
+      "repoName": "pillow",
+      "repo": "python-pillow/Pillow",
+      "targetCommit": "e9ef1d236dcc964c186f76156aeff5db186a2708",
+      "baseCommit": "29fee8fc43d59dd65b7c533def44548aa5b9bc12",
+      "dockerImage": "namanjain12/pillow_final:e9ef1d236dcc964c186f76156aeff5db186a2708",
+      "problemStatementSha256": "cd79bfd9363725f752c6bc5b80ba78ec1b40db0d4575b82e090afcc07b36abd6",
+      "expectedOutputSha256": "312c0e0615460d7c99a14f079e93a4a9f6b8802d6d5ed0a8346b669370aeb8a1"
+    },
+    {
+      "rowIndex": 70,
+      "repoName": "pyramid",
+      "repo": "Pylons/pyramid",
+      "targetCommit": "bdce333dc4bc29f0a7927539c032ba08ae2d6c57",
+      "baseCommit": "2ae6f2cba5fc228e20c1ba26ad4f1411a63bbabb",
+      "dockerImage": "namanjain12/pyramid_final:bdce333dc4bc29f0a7927539c032ba08ae2d6c57",
+      "problemStatementSha256": "65a118094bb102648049c1112d093b0f1b32993b85d2c02301878e71ac404958",
+      "expectedOutputSha256": "3bd09922e78fe2d0da7ccb8ecd4d62913f5bf2ba060f0ced2ed68f326aad6be3"
+    },
+    {
+      "rowIndex": 80,
+      "repoName": "scrapy",
+      "repo": "scrapy/scrapy",
+      "targetCommit": "5e6c49296791568ca020cd61f5c0043db9b9d420",
+      "baseCommit": "b6afd1cffe9c56df99ac9f0ee3fd57d6501a84c6",
+      "dockerImage": "namanjain12/scrapy_final:5e6c49296791568ca020cd61f5c0043db9b9d420",
+      "problemStatementSha256": "30f77670c3332f472c776ecdb422fe951a71c0e2d7480c1c638d73eb5bd3f5d7",
+      "expectedOutputSha256": "83da8beb413f62f09d65dae5a4780d60fdbfa4a6f55fcb5c4b631d07209ae8c4"
+    },
+    {
+      "rowIndex": 90,
+      "repoName": "tornado",
+      "repo": "tornadoweb/tornado",
+      "targetCommit": "eb487cac3d829292ecca6e5124b1da5ae6bba407",
+      "baseCommit": "50800f37b72c7a401cd49c948cb5be85cabbafea",
+      "dockerImage": "namanjain12/tornado_final:eb487cac3d829292ecca6e5124b1da5ae6bba407",
+      "problemStatementSha256": "d8780d9a02cfede48c7c81b2dbd086776b15979d5af0be3a5d0194b924c2a33c",
+      "expectedOutputSha256": "7b433c41ffd4e00d301cf8d349e9ff7062fc748e33b3ac64a8cbdfa0da857f6f"
+    },
+    {
+      "targetCommit": "6d3d1fcf2583eb7b8330b194c00356ce169b2ebd"
+    }
+  ]
+}
