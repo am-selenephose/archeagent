@@ -1,0 +1,180 @@
+{
+  "schema": "archeagent.r2e-control-summary.v1",
+  "corpus": "r2e-fresh-v1",
+  "taskCount": 10,
+  "validCount": 10,
+  "allValid": true,
+  "privateReceiptBundleSha256": "9f62c0ed3be3a9462f233b9e9caa71642adc79f6c59277a840b4d9a09f1d4e6e",
+  "tasks": [
+    {
+      "taskId": "r2e-gym__aiohttp__d2b52d7c32a744379438c466e68ad2cb471deeba",
+      "repo": "aio-libs/aiohttp",
+      "baseCommit": "871fedcb014c0e568f4eed3ef5c74ae94c59c936",
+      "targetCommit": "d2b52d7c32a744379438c466e68ad2cb471deeba",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 61689,
+      "receiptSha256": "ffc109695eb791fabad8a829cc22ac6f57da287fed5c8289b02042c36c638993"
+    },
+    {
+      "taskId": "r2e-gym__coveragepy__2094909df35db45ca7a409cc37f38d49c3191d2a",
+      "repo": "nedbat/coveragepy",
+      "baseCommit": "181d71c7ae537299a74291e4671bd8b896bcd55d",
+      "targetCommit": "2094909df35db45ca7a409cc37f38d49c3191d2a",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 48206,
+      "receiptSha256": "40295ca47dfa4b20a85d45a022622e4fa3f730482eb9d0ce0fac74eca67ef8a8"
+    },
+    {
+      "taskId": "r2e-gym__datalad__4a07fb33f39d1e467b61bc359fd746424950ea4c",
+      "repo": "datalad/datalad",
+      "baseCommit": "dd9c4bd2eefc481afb8c825938cc669fef22030f",
+      "targetCommit": "4a07fb33f39d1e467b61bc359fd746424950ea4c",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 50572,
+      "receiptSha256": "3a0a428e686bd8ac50a1e9a80648ea4179f4dd1b0739a8aea28ba39549d94e0b"
+    },
+    {
+      "taskId": "r2e-gym__numpy__67aa4e738bf4298f1ccf0411f8df6116861adab1",
+      "repo": "numpy/numpy",
+      "baseCommit": "bdab3b92808efe7514ad288d25d08d7bd5e327d8",
+      "targetCommit": "67aa4e738bf4298f1ccf0411f8df6116861adab1",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 135428,
+      "receiptSha256": "3db7d0607640be4e5e029a94c72b34bcaddf48679c8041350bf3f8bd5e049669"
+    },
+    {
+      "taskId": "r2e-gym__orange3__b5a965e31d82da4134b21b15a62d708cd48e03f4",
+      "repo": "biolab/orange3",
+      "baseCommit": "4462394d84f5c53e8982029ff6f53d3366483c8b",
+      "targetCommit": "b5a965e31d82da4134b21b15a62d708cd48e03f4",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 127575,
+      "receiptSha256": "fc8d1f6ea916c4e43ea964f819f6797e21fce66596fe118fef87f876b469ff85"
+    },
+    {
+      "taskId": "r2e-gym__pandas__6a8055d8a52e1f691acefececa3e7d835f16a062",
+      "repo": "pandas-dev/pandas",
+      "baseCommit": "eb6317a3cf45dfeb76f81655310604de029ad596",
+      "targetCommit": "6a8055d8a52e1f691acefececa3e7d835f16a062",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 244447,
+      "receiptSha256": "cd47335b4e0d6e374212115091dc6fe7b638fba6dc4b7dd677cbd18e3879df8b"
+    },
+    {
+      "taskId": "r2e-gym__pillow__e9ef1d236dcc964c186f76156aeff5db186a2708",
+      "repo": "python-pillow/Pillow",
+      "baseCommit": "29fee8fc43d59dd65b7c533def44548aa5b9bc12",
+      "targetCommit": "e9ef1d236dcc964c186f76156aeff5db186a2708",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 142342,
+      "receiptSha256": "76ed7b47a5f0cc55d601b91d505e4755b3f581045e23e5a1671210ce48e33a51"
+    },
+    {
+      "taskId": "r2e-gym__pyramid__bdce333dc4bc29f0a7927539c032ba08ae2d6c57",
+      "repo": "Pylons/pyramid",
+      "baseCommit": "2ae6f2cba5fc228e20c1ba26ad4f1411a63bbabb",
+      "targetCommit": "bdce333dc4bc29f0a7927539c032ba08ae2d6c57",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 85366,
+      "receiptSha256": "09c97915d942c74ece5f5acd6cbc5bacb22b2632a442c8c456f2c79c7f0c177c"
+    },
+    {
+      "taskId": "r2e-gym__scrapy__5e6c49296791568ca020cd61f5c0043db9b9d420",
+      "repo": "scrapy/scrapy",
+      "baseCommit": "b6afd1cffe9c56df99ac9f0ee3fd57d6501a84c6",
+      "targetCommit": "5e6c49296791568ca020cd61f5c0043db9b9d420",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 84769,
+      "receiptSha256": "9ea6782aa04ab46aa9285547a83155fac8ef378147e22507f76a64ec6fc4002a"
+    },
+    {
+      "taskId": "r2e-gym__tornado__eb487cac3d829292ecca6e5124b1da5ae6bba407",
+      "repo": "tornadoweb/tornado",
+      "baseCommit": "50800f37b72c7a401cd49c948cb5be85cabbafea",
+      "targetCommit": "eb487cac3d829292ecca6e5124b1da5ae6bba407",
+      "negative": {
+        "exitCode": 1,
+        "matched": false
+      },
+      "gold": {
+        "exitCode": 0,
+        "matched": true
+      },
+      "valid": true,
+      "durationMs": 28901,
+      "receiptSha256": "0f6f3b3569028d044019a04adb71102e4ced909e055da68dcbfc44d96704b729"
+    }
+  ]
+}

@@ -196,16 +196,21 @@ node benchmarks/provider/run.mjs \
   --ledger=benchmarks/provider/results/living-benchmark.jsonl
 ~~~
 
-The harness is implemented and locally validated. A frozen three-task SWE-Rebench pilot was also run with the local qwen2.5-14b-am adapter. At primary-run time, two tasks had valid authority controls and were scored; both first attempts failed, with zero retries. The third frozen task was marked INVALID_CONTROL rather than silently dropped. Later diagnostics improved the adapter/importer and revalidated Falcon separately, but those later runs do not rewrite the frozen v1 primary score.
+The harness is implemented and locally validated. It now has two real-task authority paths:
 
-See benchmarks/provider/README.md for the data contract.
+- the original SWE-Rebench development pilot, whose first-attempt failures remain preserved;
+- an R2E-Gym hidden-authority path that freezes fresh tasks before execution and evaluates candidate patches in post-agent, network-disabled authority containers.
+
+For r2e-fresh-v1, 10 fresh tasks passed base/gold authority controls before model execution. The frozen local qwen2.5-14b-am primary ledger recorded 1 pass and 9 failures with zero retries. Authority v2 subsequently added candidate test-path rejection and explicit changed-path receipts; it does not rewrite the historical v1 score.
+
+See benchmarks/provider/README.md for the data contract and evidence bundle.
 
 ## Current verification
 
 The repository contains:
 
-- 25 TypeScript test files;
-- 90 TypeScript tests;
+- 27 TypeScript test files;
+- 112 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
@@ -237,6 +242,6 @@ It does not currently claim:
 - automatic high-risk merge authority;
 - universal formal verification.
 
-The next empirical stage is to run the provider harness across pinned executable repository tasks and publish reproducible provider-backed receipts rather than model self-reports.
+The next empirical stage is a new frozen, unseen R2E-Gym corpus evaluated across multiple provider agents with the same hidden authority contract. Those real outcomes can then be fed back into Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
 
 See docs/ARCHITECTURE.md and docs/RESEARCH_POSITIONING.md.

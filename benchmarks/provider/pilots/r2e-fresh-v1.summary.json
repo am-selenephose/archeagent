@@ -1,0 +1,44 @@
+{
+  "schema": "archeagent.r2e-fresh-pilot-summary.v1",
+  "corpus": "r2e-fresh-v1",
+  "frozenAt": "2026-10-01",
+  "source": {
+    "dataset": "R2E-Gym/R2E-Gym-Lite",
+    "config": "default",
+    "split": "dev_10pr_v1",
+    "offset": 1,
+    "selectedRows": 10,
+    "seenExploratoryRow0Excluded": true,
+    "balancedAcrossRepos": true
+  },
+  "authorityControls": {
+    "total": 10,
+    "valid": 10,
+    "invalid": 0,
+    "rule": "Each base state must not match the declared R2E status map; the authority-held target patch must exactly match it."
+  },
+  "primary": {
+    "agentId": "qwen2.5-14b-am-r2e-fresh-v1",
+    "agentFingerprint": "dcc653ebf5bbf87957f5df7058da1a1aadcf68063b7b16cb5aa4d1c3339b4558",
+    "runs": 10,
+    "passes": 1,
+    "failures": 9,
+    "passRate": 0.1,
+    "retries": 0,
+    "harnessErrors": 0,
+    "changedCandidates": 3,
+    "unchangedCandidates": 7,
+    "passingTask": "r2e-gym__scrapy__5e6c49296791568ca020cd61f5c0043db9b9d420"
+  },
+  "immutableArtifacts": {
+    "authorityTasksSha256": "ae318c71c9d4342dd5cf5c60218f2a63babc887890d973cbdb63eea0b54dcc13",
+    "primaryLedgerSha256": "ec9ba1ba353d4616533138a8d0b56a49a9d90bb9f0a47f87754d38bfa16c3866",
+    "generatedSummarySha256": "216c3083465d3b0a5bb0f566dbb2846218dedb1f807252a52bfee1e49a89eef1"
+  },
+  "authorityVersioning": {
+    "v1": "Exact hidden R2E status-map oracle, network-off authority Docker, candidate patch applied only after agent exit.",
+    "v2": "Adds candidate test/hidden-path rejection and explicit changed-path inventory.",
+    "historicalScrapyPass": "Retained as a v1 pass. Its stored diff tail contains ordinary test-code mutation signals and the full diff was truncated, so it is not claimed as v2-clean without a new independent run."
+  },
+  "claimBoundary": "This is a frozen local-model baseline and benchmark-infrastructure result, not a comparative provider ranking."
+}

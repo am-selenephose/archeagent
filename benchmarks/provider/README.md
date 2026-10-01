@@ -278,3 +278,72 @@ Files:
 
 This pilot is evidence that the benchmark plumbing can preserve failures, validate hidden evaluators with gold controls, and distinguish infrastructure defects from model-patch defects. It is not a comparative provider benchmark and is not evidence that one model is superior to another.
 
+## R2E-Gym hidden authority benchmark
+
+Archeagent also supports a stronger hidden-authority path built from R2E-Gym Lite.
+
+The R2E path differs from the SWE-Rebench importer:
+
+- the coding agent works on a normal host checkout at the exact parent commit;
+- only problem_statement is sent to the model;
+- dataset prompt, parsed gold commit material, authority execution traces, hidden tests, and expected status maps are not exposed to the agent;
+- the frozen public manifest stores hashes of issue/oracle material, not their raw contents;
+- the authority Docker image is instantiated only after the agent exits;
+- Docker networking is disabled for evaluation;
+- /r2e_tests exists outside /testbed in the authority image and is linked into /testbed only during evaluation;
+- the candidate patch is mounted read-only into the authority container;
+- pass/fail is based on exact parsed pytest status-map equality with expected_output_json, not the pytest process exit code.
+
+This matters because R2E tasks may intentionally contain known baseline FAILED or ERROR statuses. A valid candidate must reproduce the exact declared map.
+
+### Fresh v1 corpus
+
+r2e-fresh-v1 was frozen from R2E-Gym/R2E-Gym-Lite dev_10pr_v1 before model execution.
+
+Selection properties:
+
+- exploratory row 0 was excluded;
+- 10 fresh rows were selected, balanced one per supported repository;
+- exact parent SHAs were resolved from Git;
+- the hidden authority task artifact was hashed and withheld from the public repository;
+- all 10 tasks passed authority controls: base state did not match the oracle, authority-held target patch did match the oracle.
+
+Frozen local-Qwen primary result:
+
+- primary runs: 10
+- passes: 1
+- failures: 9
+- pass rate: 10 percent
+- retries: 0
+- harness errors: 0
+- changed candidates: 3
+- unchanged candidates: 7
+
+The passing v1 task was the Scrapy row. Its v1 receipt is preserved exactly as run.
+
+### Authority v2
+
+After the v1 run, receipt audit showed that the passing Scrapy patch was large and its stored diff tail contained ordinary repository test-code mutation signals. Because the v1 full diff was intentionally truncated in the receipt, Archeagent does not retroactively relabel that run.
+
+Instead authority v2 adds a stricter forward-only contract:
+
+- candidate changes under obvious test paths are rejected;
+- .archeagent-hidden and r2e_tests paths are forbidden;
+- every benchmark receipt records changedPaths and changedPathCount;
+- hardened authority results use schema archeagent.r2e-authority-result.v2.
+
+The v1 1/10 result remains historical. Future runs use v2 semantics.
+
+Evidence:
+
+- benchmarks/provider/pilots/r2e-fresh-v1.freeze.json
+- benchmarks/provider/pilots/r2e-fresh-v1.manifest.json
+- benchmarks/provider/pilots/r2e-fresh-v1.controls.json
+- benchmarks/provider/pilots/r2e-fresh-v1.summary.json
+- benchmarks/provider/results/r2e-fresh-v1-qwen-primary.jsonl
+- benchmarks/provider/results/r2e-fresh-v1-qwen-summary.json
+
+The public repository intentionally does not contain the frozen raw authority task JSONL because that artifact includes hidden expected status maps.
+
+This is a local-model baseline and benchmark-integrity result, not a ranking of commercial model providers.
+

@@ -219,7 +219,68 @@ describe('provider benchmark harness', () => {
         agentStderrTail: expect.any(String),
         patchDiffTail: expect.any(String),
         patchDiffTruncated: false,
+        changedPaths: ['answer.txt'],
+        changedPathCount: 1,
       }));
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('handles an agent that closes stdin before consuming a large prompt', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'archeagent-early-exit-agent-'));
+    const sourceRepo = join(fixture, 'source');
+    const agentScript = join(fixture, 'agent.mjs');
+
+    try {
+      await exec(['git', 'init', '--quiet', sourceRepo], fixture);
+      await exec(['git', 'config', 'user.email', 'benchmark@example.invalid'], sourceRepo);
+      await exec(['git', 'config', 'user.name', 'Benchmark Fixture'], sourceRepo);
+      await writeFile(join(sourceRepo, 'answer.txt'), 'bad\n', 'utf8');
+      await exec(['git', 'add', '.'], sourceRepo);
+      await exec(['git', 'commit', '--quiet', '-m', 'fixture'], sourceRepo);
+
+      const commit = await new Promise<string>((resolve, reject) => {
+        const child = spawn('git', ['rev-parse', 'HEAD'], {
+          cwd: sourceRepo,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          shell: false,
+        });
+        let stdout = '';
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => { stdout += chunk; });
+        child.on('error', reject);
+        child.on('close', (code) =>
+          code === 0 ? resolve(stdout.trim()) : reject(new Error('rev-parse failed')),
+        );
+      });
+
+      await writeFile(
+        agentScript,
+        "process.stdin.destroy();\nprocess.exit(7);\n",
+        'utf8',
+      );
+
+      const task = parseTaskDataset(JSON.stringify({
+        id: 'early-stdin-close',
+        repo: 'fixture/local',
+        repoUrl: sourceRepo,
+        baseCommit: commit,
+        prompt: 'x'.repeat(512 * 1024),
+        setup: { commands: [] },
+        evaluator: { commands: [['node', '--version']] },
+      }))[0]!;
+
+      const [agent] = validateAgentMatrix([
+        { id: 'fixture-agent', argv: ['node', agentScript], timeoutMs: 30_000 },
+      ]);
+
+      const record = await runBenchmarkTask(task, agent!);
+
+      expect(record.passed).toBe(false);
+      expect(record.changed).toBe(false);
+      expect(record.agentExitCode).toBe(7);
+      expect(record.agentTimedOut).toBe(false);
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }

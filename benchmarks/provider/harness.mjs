@@ -229,6 +229,7 @@ function runProcess(
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    let stdinError = null;
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -242,6 +243,11 @@ function runProcess(
     });
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
+    });
+    child.stdin.on('error', (error) => {
+      if (error?.code === 'EPIPE') return;
+      stdinError = error;
+      child.kill('SIGKILL');
     });
 
     child.on('error', (error) => {
@@ -259,11 +265,14 @@ function runProcess(
     child.on('close', (code, signal) => {
       clearTimeout(timer);
       resolve({
-        exitCode: code,
+        exitCode: stdinError ? null : code,
         signal,
         timedOut,
         stdout,
-        stderr,
+        stderr:
+          stdinError == null
+            ? stderr
+            : stderr + '\nstdin write failed: ' + stdinError.message,
         durationMs: Date.now() - startedAt,
       });
     });
@@ -422,6 +431,23 @@ export async function runBenchmarkTask(task, agent) {
       '--binary',
       '--no-ext-diff',
     ]);
+    const changedPathRun = await runProcess([
+      'git',
+      '-C',
+      repoDir,
+      'diff',
+      '--name-only',
+      '--no-ext-diff',
+    ]);
+    if (changedPathRun.exitCode !== 0) {
+      throw new Error(
+        'git diff --name-only failed: ' + changedPathRun.stderr.trim(),
+      );
+    }
+    const changedPaths = changedPathRun.stdout
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean);
     const changed = diff.stdout.trim() !== '';
 
     await materializeEvaluatorFiles(task.evaluator.files, repoDir);
@@ -468,6 +494,8 @@ export async function runBenchmarkTask(task, agent) {
       agentStderrTail: agentRun.stderr.slice(-4000),
       patchSha256: changed ? await hashText(diff.stdout) : null,
       patchBytes: Buffer.byteLength(diff.stdout),
+      changedPaths,
+      changedPathCount: changedPaths.length,
       patchDiffTail: diff.stdout.slice(-8000),
       patchDiffTruncated: diff.stdout.length > 8000,
       evaluatorFilesInjected: task.evaluator.files.length,

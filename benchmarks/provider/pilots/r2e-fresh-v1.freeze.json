@@ -1,0 +1,18 @@
+{
+  "schema": "archeagent.r2e-freeze-receipt.v1",
+  "frozenAt": "2026-10-01",
+  "corpus": "r2e-fresh-v1",
+  "selection": {
+    "split": "dev_10pr_v1",
+    "offset": 1,
+    "sourceRows": 99,
+    "count": 10,
+    "seenRow0Excluded": true,
+    "balancedAcrossRepos": true
+  },
+  "selectedRows": 10,
+  "authorityTasksSha256": "ae318c71c9d4342dd5cf5c60218f2a63babc887890d973cbdb63eea0b54dcc13",
+  "manifestSha256": "1d99b1fe6f41c761a44e46a7385d2a09a0295786c2bf301d8958c22c9a786b8c",
+  "authorityArtifact": "withheld-from-public-repository",
+  "selectionFrozenBeforeModelExecution": true
+}

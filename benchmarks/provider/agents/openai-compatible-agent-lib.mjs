@@ -155,20 +155,39 @@ async function writeRepoFile(cwd, path, content) {
 }
 
 async function replaceRepoText(cwd, path, oldText, newText) {
+  const safe = validateRepoRelativePath(path);
+
   if (typeof oldText !== 'string' || oldText.length === 0) {
-    throw new Error('replace_text old_text must be a non-empty string');
+    const error = new Error(
+      'replace_text old_text must be a non-empty string',
+    );
+    error.code = 'INVALID_REPLACE_ARGUMENT';
+    error.field = 'old_text';
+    throw error;
   }
   if (typeof newText !== 'string') {
-    throw new Error('replace_text new_text must be a string');
+    const error = new Error('replace_text new_text must be a string');
+    error.code = 'INVALID_REPLACE_ARGUMENT';
+    error.field = 'new_text';
+    throw error;
   }
 
-  const safe = validateRepoRelativePath(path);
   const current = await readRepoFile(cwd, safe);
   const first = current.indexOf(oldText);
   const last = current.lastIndexOf(oldText);
 
   if (first === -1 || first !== last) {
-    throw new Error('replace_text old_text must occur exactly once in ' + safe);
+    const matchCount =
+      first === -1 ? 0 : current.split(oldText).length - 1;
+    const error = new Error(
+      'replace_text old_text must occur exactly once in ' +
+        safe +
+        '; found ' +
+        matchCount,
+    );
+    error.code = 'REPLACE_MATCH_COUNT';
+    error.matchCount = matchCount;
+    throw error;
   }
 
   const next =
@@ -287,6 +306,38 @@ function recoverableToolError(action, error) {
       toolError: true,
       code: 'ENOENT',
       message: 'file not found: ' + validateRepoRelativePath(action.path),
+    };
+  }
+
+  if (
+    action?.action === 'replace_text' &&
+    error &&
+    typeof error === 'object' &&
+    error.code === 'REPLACE_MATCH_COUNT'
+  ) {
+    return {
+      toolError: true,
+      code: 'REPLACE_MATCH_COUNT',
+      matchCount:
+        Number.isInteger(error.matchCount) ? error.matchCount : null,
+      message: error.message,
+    };
+  }
+
+  if (
+    action?.action === 'replace_text' &&
+    error &&
+    typeof error === 'object' &&
+    error.code === 'INVALID_REPLACE_ARGUMENT'
+  ) {
+    const safePath = validateRepoRelativePath(action.path);
+    return {
+      toolError: true,
+      code: 'INVALID_REPLACE_ARGUMENT',
+      field:
+        typeof error.field === 'string' ? error.field : null,
+      path: safePath,
+      message: error.message,
     };
   }
 

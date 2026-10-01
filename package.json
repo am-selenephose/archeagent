@@ -15,7 +15,9 @@
     "benchmark:provider:validate": "node benchmarks/provider/validate.mjs",
     "benchmark:provider:report": "node benchmarks/provider/report.mjs",
     "benchmark:provider:import:swerebench": "node benchmarks/provider/import-swerebench.mjs",
-    "benchmark:swerebench:import": "node benchmarks/provider/import-swerebench.mjs"
+    "benchmark:swerebench:import": "node benchmarks/provider/import-swerebench.mjs",
+    "benchmark:provider:import:r2e": "node benchmarks/provider/import-r2e-gym.mjs",
+    "benchmark:r2e:import": "node benchmarks/provider/import-r2e-gym.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",

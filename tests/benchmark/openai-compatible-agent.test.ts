@@ -202,22 +202,107 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
-  it('rejects ambiguous exact-text replacements', async () => {
+  it('returns recoverable tool errors for zero-match and multi-match replacements', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {
       await writeFile(join(dir, 'module.txt'), 'same\nsame\n', 'utf8');
 
-      await expect(runToolAgent({
-        cwd: dir,
-        taskPrompt: 'Replace same.',
-        maxSteps: 2,
-        complete: async () => JSON.stringify({
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'module.txt',
+          old_text: 'missing',
+          new_text: 'changed',
+        },
+        {
           action: 'replace_text',
           path: 'module.txt',
           old_text: 'same',
           new_text: 'changed',
-        }),
-      })).rejects.toThrow(/exactly once/i);
+        },
+        { action: 'finish', summary: 'recovered from replace mismatch' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Try two replacements, then finish.',
+        maxSteps: 5,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1 || index === 2) {
+            expect(messages.at(-1)?.content).toContain('toolError');
+            expect(messages.at(-1)?.content).toContain('REPLACE_MATCH_COUNT');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'REPLACE_MATCH_COUNT',
+        matchCount: 0,
+      });
+      expect(result.transcript[1]?.result).toMatchObject({
+        toolError: true,
+        code: 'REPLACE_MATCH_COUNT',
+        matchCount: 2,
+      });
+      expect(await readFile(join(dir, 'module.txt'), 'utf8')).toBe(
+        'same\nsame\n',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns recoverable tool errors for malformed replace_text arguments on safe paths', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.txt'), 'hello\n', 'utf8');
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'module.txt',
+          old_text: '',
+          new_text: 'changed',
+        },
+        {
+          action: 'replace_text',
+          path: 'module.txt',
+          old_text: 'hello',
+          new_text: 123,
+        },
+        { action: 'finish', summary: 'recovered' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Try malformed replacements and recover.',
+        maxSteps: 5,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1 || index === 2) {
+            expect(messages.at(-1)?.content).toContain('toolError');
+            expect(messages.at(-1)?.content).toContain(
+              'INVALID_REPLACE_ARGUMENT',
+            );
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'INVALID_REPLACE_ARGUMENT',
+      });
+      expect(result.transcript[1]?.result).toMatchObject({
+        toolError: true,
+        code: 'INVALID_REPLACE_ARGUMENT',
+      });
+      expect(await readFile(join(dir, 'module.txt'), 'utf8')).toBe('hello\n');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
