@@ -50,5 +50,18 @@
     "controlsValid": 10,
     "controlsTotal": 10,
     "modelRunsStarted": false
-  }
+  },
+  "agent": {
+    "revision": 2,
+    "configSha256": "841e6cee5b199ddfca56bebeb54ebf94b32250041aad66d7e7c9c573150b16c7",
+    "modelRunsStarted": false
+  },
+  "preExecutionCorrections": [
+    {
+      "kind": "agent-argv-resolution",
+      "priorRevision": 1,
+      "correction": "Changed repo-relative agent script argv to exact local study worktree path because the benchmark harness executes agents with the target repository as cwd.",
+      "modelRunsBeforeCorrection": 0
+    }
+  ]
 }
