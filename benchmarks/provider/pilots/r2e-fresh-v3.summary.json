@@ -1,0 +1,59 @@
+{
+  "schema": "archeagent.r2e-fresh-v3-summary.v1",
+  "corpus": "r2e-fresh-v3",
+  "source": {
+    "dataset": "R2E-Gym/R2E-Gym-Lite",
+    "config": "default",
+    "split": "dev_10pr_v1",
+    "rowIndices": [
+      3,
+      12,
+      22,
+      32,
+      42,
+      52,
+      62,
+      72,
+      82,
+      92
+    ],
+    "selectedRows": 10,
+    "explicitRowsFrozenBeforeModelExecution": true
+  },
+  "authority": {
+    "activeRevision": 2,
+    "authorityTasksSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
+    "controlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48",
+    "controlsValid": 10,
+    "controlsTotal": 10,
+    "allValid": true,
+    "controlGateCompletedBeforePrimary": true
+  },
+  "primary": {
+    "agentRevision": 2,
+    "agentConfigSha256": "841e6cee5b199ddfca56bebeb54ebf94b32250041aad66d7e7c9c573150b16c7",
+    "agentFingerprint": "da11cb6384bf3204753ab32b39b4f17f28475b697f19b5793f89da5cd4682ee1",
+    "startedAt": "2026-10-02T17:04:11.437Z",
+    "completedAt": "2026-10-02T17:15:38.044Z",
+    "ledgerSha256": "7dc55740d516a87e1d66501c552bc3568619a351d439c1e813f362c5c529f6c1",
+    "runs": 10,
+    "passes": 0,
+    "failures": 10,
+    "passRate": 0,
+    "retries": 0,
+    "harnessErrors": 1,
+    "harnessErrorRate": 0.1,
+    "changedCandidates": 7,
+    "unchangedCandidates": 2,
+    "harnessFailedBeforeCandidate": 1,
+    "note": "The pandas row failed during git clone with fatal: early EOF; per methodology harness errors remain in the primary denominator."
+  },
+  "postPrimaryHardening": {
+    "mergeCommit": "2d2f4c66efe6ca8a4e82a298f7376b0d9b912a97",
+    "adapterBundleSha256": "07c77ca3522cf679b4efda5e4a0f10d1d95e899179783d9a95d2430531323e04",
+    "editPolicy": "source-only",
+    "historicalPrimaryRewritten": false,
+    "note": "Convergence guard and source-only edit policy were reconciled after the frozen primary completed. They apply only to later diagnostics or future corpora."
+  },
+  "claimBoundary": "Preregistered local-model development baseline. It is not a comparative provider benchmark and post-primary hardening does not alter the 0/10 frozen primary result."
+}
