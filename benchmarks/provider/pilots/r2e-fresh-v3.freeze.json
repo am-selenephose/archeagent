@@ -1,14 +1,12 @@
 {
-  "schema": "archeagent.r2e-freeze.v1",
+  "schema": "archeagent.r2e-freeze.v2",
   "corpus": "r2e-fresh-v3",
   "frozenAt": "2026-10-02",
-  "repositoryCommit": "5b9fa21d8cc5b368277710beeea8316b087c2b61",
   "dataset": "R2E-Gym/R2E-Gym-Lite",
   "config": "default",
   "split": "dev_10pr_v1",
   "selection": {
     "mode": "explicit-row-indices",
-    "rule": "Next unused row per supported repository after historical v1/v2 selections; exploratory row 0 excluded.",
     "rowIndices": [
       3,
       12,
@@ -24,14 +22,25 @@
     "selectedRows": 10,
     "modelOutcomesObservedBeforeFreeze": false
   },
-  "artifacts": {
-    "privateAuthorityTasksSha256": "d53527949877b3371669b2ab56dd24e7dd0db098e626055c80780be1a6287170",
-    "publicManifestSha256": "33fa0df2270626ab700d3163621e52343712c9496df08d007c679ef7472324f7"
-  },
-  "gate": {
-    "status": "FROZEN_AWAITING_CONTROLS",
-    "requiredBeforeModelExecution": "All 10 exact final tasks must satisfy base != oracle and authority-held gold == oracle.",
-    "modelRunsStarted": false
-  },
+  "publicManifestSha256": "33fa0df2270626ab700d3163621e52343712c9496df08d007c679ef7472324f7",
+  "activeRevision": 2,
+  "revisions": [
+    {
+      "revision": 1,
+      "repositoryCommit": "5b9fa21d8cc5b368277710beeea8316b087c2b61",
+      "privateAuthorityTasksSha256": "d53527949877b3371669b2ab56dd24e7dd0db098e626055c80780be1a6287170",
+      "controlGate": "FAILED_9_OF_10",
+      "modelRunsStarted": false,
+      "disposition": "SUPERSEDED_AFTER_PRE_MODEL_AUTHORITY_NORMALIZATION_FIX"
+    },
+    {
+      "revision": 2,
+      "importerFixCommit": "fe5c84376f6cfb1990bbdc2cd76b63eb83f3211e",
+      "privateAuthorityTasksSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
+      "controlGate": "FROZEN_AWAITING_CONTROLS",
+      "modelRunsStarted": false
+    }
+  ],
+  "requiredBeforeModelExecution": "Active revision must pass exact base/gold authority controls for all 10 tasks.",
   "hiddenAuthorityArtifactPublished": false
 }
