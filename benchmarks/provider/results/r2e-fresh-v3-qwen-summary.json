@@ -1,0 +1,31 @@
+{
+  "schema": "archeagent.provider-benchmark-summary.v1",
+  "records": 10,
+  "primaryRuns": 10,
+  "retries": 0,
+  "uniqueTasks": 10,
+  "uniqueAgents": 1,
+  "firstRecordedAt": "2026-10-02T17:04:11.437Z",
+  "lastRecordedAt": "2026-10-02T17:15:38.044Z",
+  "agents": {
+    "qwen2.5-14b-am-r2e-fresh-v3-primary": {
+      "fingerprint": "da11cb6384bf3204753ab32b39b4f17f28475b697f19b5793f89da5cd4682ee1",
+      "primaryRuns": 10,
+      "passed": 0,
+      "failed": 10,
+      "passRate": 0,
+      "retries": 0,
+      "harnessErrors": 1,
+      "harnessErrorRate": 0.1,
+      "averageAgentDurationMs": 37281.666666666664,
+      "averageEvaluatorDurationMs": 983.8888888888889,
+      "averagePatchBytes": 1400.3333333333333
+    }
+  },
+  "pairwise": [],
+  "methodology": {
+    "primaryScore": "first recorded attempt per taskId+agentId",
+    "retriesExcludedFromPrimaryScore": true,
+    "harnessErrorsCountAsFailures": true
+  }
+}
