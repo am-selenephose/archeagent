@@ -3,7 +3,7 @@
     "id": "qwen2.5-14b-am-r2e-fresh-v3-primary",
     "argv": [
       "node",
-      "benchmarks/provider/agents/openai-compatible-agent.mjs"
+      "/tmp/archeagent-r2e-v3/benchmarks/provider/agents/openai-compatible-agent.mjs"
     ],
     "env": {
       "ARCHEAGENT_AGENT_BASE_URL": "http://127.0.0.1:11436/v1",
@@ -15,7 +15,9 @@
       "model": "qwen2.5-14b-am",
       "study": "r2e-fresh-v3-primary",
       "corpusArtifactSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
-      "authorityControlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48"
+      "authorityControlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48",
+      "agentConfigRevision": 2,
+      "modelRunsBeforeRevision": 0
     },
     "timeoutMs": 600000
   }
