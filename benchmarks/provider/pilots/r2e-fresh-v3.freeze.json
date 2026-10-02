@@ -37,10 +37,18 @@
       "revision": 2,
       "importerFixCommit": "fe5c84376f6cfb1990bbdc2cd76b63eb83f3211e",
       "privateAuthorityTasksSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
-      "controlGate": "FROZEN_AWAITING_CONTROLS",
-      "modelRunsStarted": false
+      "controlGate": "PASSED_10_OF_10",
+      "modelRunsStarted": false,
+      "controlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48"
     }
   ],
-  "requiredBeforeModelExecution": "Active revision must pass exact base/gold authority controls for all 10 tasks.",
-  "hiddenAuthorityArtifactPublished": false
+  "requiredBeforeModelExecution": "SATISFIED",
+  "hiddenAuthorityArtifactPublished": false,
+  "gate": {
+    "status": "CONTROLS_VALID_MODEL_NOT_RUN",
+    "activeRevision": 2,
+    "controlsValid": 10,
+    "controlsTotal": 10,
+    "modelRunsStarted": false
+  }
 }
