@@ -383,7 +383,7 @@ Public evidence:
 - `benchmarks/provider/results/r2e-fresh-v2-qwen-summary.json`
 - `benchmarks/provider/results/r2e-fresh-v2-largefile-diagnostic.jsonl`
 
-The next clean empirical run should use a new unseen v3 corpus with exact final-artifact controls completed before any model attempt.
+The preregistered v3 corpus below is the next clean empirical run: its exact final authority artifact passed controls before the first model attempt.
 
 ### Convergence v3.1 post-primary diagnostic
 
@@ -411,3 +411,43 @@ Evidence:
 - benchmarks/provider/pilots/r2e-convergence-v31-diagnostic.summary.json
 - benchmarks/provider/results/r2e-convergence-v31-diagnostic.jsonl
 
+
+
+### Fresh v3 preregistered primary
+
+r2e-fresh-v3 froze 10 explicit rows from dev_10pr_v1 before model execution. The public manifest contains issue/oracle hashes and immutable base/target commits; the raw authority task artifact remains private because it contains expected status maps.
+
+Pre-run integrity:
+
+- authority artifact SHA-256: `53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7`;
+- authority controls SHA-256: `07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48`;
+- 10/10 base/gold controls passed before the primary run;
+- primary agent config revision 2 SHA-256: `841e6cee5b199ddfca56bebeb54ebf94b32250041aad66d7e7c9c573150b16c7`;
+- primary agent fingerprint: `da11cb6384bf3204753ab32b39b4f17f28475b697f19b5793f89da5cd4682ee1`.
+
+Frozen primary result:
+
+- primary runs: 10;
+- passes: 0;
+- failures: 10;
+- retries: 0;
+- harness errors: 1;
+- harness-error rate: 10 percent;
+- first recorded attempt: 2026-10-02T17:04:11.437Z;
+- last recorded attempt: 2026-10-02T17:15:38.044Z.
+
+The pandas task failed during repository clone with `fatal: early EOF`. The harness error remains in the primary denominator. Seven tasks produced candidate patches, two completed with no patch, and one failed before candidate execution.
+
+After the primary completed, current-main convergence and source-only edit-policy hardening were reconciled into the research branch. Those changes are explicitly post-primary; they do not upgrade, replace, or rerun the frozen v3 result.
+
+Evidence:
+
+- `benchmarks/provider/pilots/r2e-fresh-v3.freeze.json`
+- `benchmarks/provider/pilots/r2e-fresh-v3.manifest.json`
+- `benchmarks/provider/pilots/r2e-fresh-v3.controls.json`
+- `benchmarks/provider/pilots/r2e-fresh-v3.agent.json`
+- `benchmarks/provider/pilots/r2e-fresh-v3.summary.json`
+- `benchmarks/provider/results/r2e-fresh-v3-qwen-primary.jsonl`
+- `benchmarks/provider/results/r2e-fresh-v3-qwen-summary.json`
+
+This is a preregistered local-model baseline, not a comparative provider ranking.

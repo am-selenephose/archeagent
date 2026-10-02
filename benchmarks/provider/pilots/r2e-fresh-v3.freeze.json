@@ -1,0 +1,89 @@
+{
+  "schema": "archeagent.r2e-freeze.v2",
+  "corpus": "r2e-fresh-v3",
+  "frozenAt": "2026-10-02",
+  "dataset": "R2E-Gym/R2E-Gym-Lite",
+  "config": "default",
+  "split": "dev_10pr_v1",
+  "selection": {
+    "mode": "explicit-row-indices",
+    "rowIndices": [
+      3,
+      12,
+      22,
+      32,
+      42,
+      52,
+      62,
+      72,
+      82,
+      92
+    ],
+    "selectedRows": 10,
+    "modelOutcomesObservedBeforeFreeze": false
+  },
+  "publicManifestSha256": "33fa0df2270626ab700d3163621e52343712c9496df08d007c679ef7472324f7",
+  "activeRevision": 2,
+  "revisions": [
+    {
+      "revision": 1,
+      "repositoryCommit": "5b9fa21d8cc5b368277710beeea8316b087c2b61",
+      "privateAuthorityTasksSha256": "d53527949877b3371669b2ab56dd24e7dd0db098e626055c80780be1a6287170",
+      "controlGate": "FAILED_9_OF_10",
+      "modelRunsStarted": false,
+      "disposition": "SUPERSEDED_AFTER_PRE_MODEL_AUTHORITY_NORMALIZATION_FIX"
+    },
+    {
+      "revision": 2,
+      "importerFixCommit": "fe5c84376f6cfb1990bbdc2cd76b63eb83f3211e",
+      "privateAuthorityTasksSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
+      "controlGate": "PASSED_10_OF_10",
+      "modelRunsStarted": false,
+      "controlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48"
+    }
+  ],
+  "requiredBeforeModelExecution": "SATISFIED",
+  "hiddenAuthorityArtifactPublished": false,
+  "gate": {
+    "status": "PRIMARY_COMPLETED",
+    "activeRevision": 2,
+    "controlsValid": 10,
+    "controlsTotal": 10,
+    "modelRunsStarted": true,
+    "primaryRuns": 10
+  },
+  "agent": {
+    "revision": 2,
+    "configSha256": "841e6cee5b199ddfca56bebeb54ebf94b32250041aad66d7e7c9c573150b16c7",
+    "fingerprint": "da11cb6384bf3204753ab32b39b4f17f28475b697f19b5793f89da5cd4682ee1",
+    "modelRunsStarted": true
+  },
+  "preExecutionCorrections": [
+    {
+      "kind": "agent-argv-resolution",
+      "priorRevision": 1,
+      "correction": "Changed repo-relative agent script argv to exact local study worktree path because the benchmark harness executes agents with the target repository as cwd.",
+      "modelRunsBeforeCorrection": 0
+    }
+  ],
+  "primaryExecution": {
+    "startedAt": "2026-10-02T17:04:11.437Z",
+    "completedAt": "2026-10-02T17:15:38.044Z",
+    "runs": 10,
+    "ledgerSha256": "7dc55740d516a87e1d66501c552bc3568619a351d439c1e813f362c5c529f6c1",
+    "agentRevision": 2,
+    "agentFingerprint": "da11cb6384bf3204753ab32b39b4f17f28475b697f19b5793f89da5cd4682ee1",
+    "firstAttemptOnly": true
+  },
+  "postPrimaryHardening": [
+    {
+      "kind": "main-hardening-reconciliation",
+      "mergeCommit": "2d2f4c66efe6ca8a4e82a298f7376b0d9b912a97",
+      "agentConfigCommit": "4d6574247345103208e6053f5320134c768e966c",
+      "correctionCommit": "fa8a2b78d762cf2a49a2179015270175f87f2cf5",
+      "adapterBundleSha256": "07c77ca3522cf679b4efda5e4a0f10d1d95e899179783d9a95d2430531323e04",
+      "editPolicy": "source-only",
+      "disposition": "POST_PRIMARY_ONLY_DOES_NOT_REWRITE_PRIMARY"
+    }
+  ]
+}

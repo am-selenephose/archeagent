@@ -1,0 +1,29 @@
+[
+  {
+    "id": "qwen2.5-14b-am-r2e-fresh-v3-primary",
+    "argv": [
+      "node",
+      "/tmp/archeagent-r2e-v3/benchmarks/provider/agents/openai-compatible-agent.mjs"
+    ],
+    "env": {
+      "ARCHEAGENT_AGENT_BASE_URL": "http://127.0.0.1:11436/v1",
+      "ARCHEAGENT_AGENT_MODEL": "qwen2.5-14b-am",
+      "ARCHEAGENT_AGENT_MAX_STEPS": "32",
+      "ARCHEAGENT_AGENT_EDIT_POLICY": "source-only"
+    },
+    "metadata": {
+      "provider": "local-llama.cpp",
+      "model": "qwen2.5-14b-am",
+      "study": "r2e-fresh-v3-primary",
+      "corpusArtifactSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
+      "authorityControlsSha256": "07cc489ba8852d2c7ca97b37b67b886ceb6764318e7e0fe2fb58a00a177e4a48",
+      "agentConfigRevision": 3,
+      "modelRunsBeforeRevision": 0,
+      "sourceCommit": "2d2f4c66efe6ca8a4e82a298f7376b0d9b912a97",
+      "adapterBundleSha256": "07c77ca3522cf679b4efda5e4a0f10d1d95e899179783d9a95d2430531323e04",
+      "editPolicy": "source-only",
+      "authorityVersion": "v3-preregistered-source-only"
+    },
+    "timeoutMs": 600000
+  }
+]

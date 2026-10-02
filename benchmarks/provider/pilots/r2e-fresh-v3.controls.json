@@ -1,0 +1,252 @@
+{
+  "schema": "archeagent.r2e-control-summary.v2",
+  "corpus": "r2e-fresh-v3",
+  "privateAuthorityTasksSha256": "53061dd18f92009cf16d9a2cb27bc7c564aa8e8f0d1e1e3b59ec12421beea4f7",
+  "taskCount": 10,
+  "validCount": 10,
+  "allValid": true,
+  "tasks": [
+    {
+      "taskId": "r2e-gym__aiohttp__ea47a46f5f9008a1ab44279c41debe609d568282",
+      "repo": "aio-libs/aiohttp",
+      "baseCommit": "412798f9771404cfedb0b813bfb6ce2469676d24",
+      "targetCommit": "ea47a46f5f9008a1ab44279c41debe609d568282",
+      "dockerImage": "namanjain12/aiohttp_final:ea47a46f5f9008a1ab44279c41debe609d568282",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 32,
+        "mismatchCount": 2
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 32,
+        "mismatchCount": 0,
+        "patchSha256": "3b9623fb9bc0fbae6e7687bf7be4113fcb74a706d230a9f410382e23ef4eb3a0",
+        "changedPaths": [
+          "aiohttp/multidict.py"
+        ]
+      },
+      "expectedStatusCount": 32,
+      "valid": true,
+      "durationMs": 2626
+    },
+    {
+      "taskId": "r2e-gym__coveragepy__edadbece423b100ff3513cd26670b1fc2631cbf3",
+      "repo": "nedbat/coveragepy",
+      "baseCommit": "64bd04c44135f6e03df193032619c4794bd87314",
+      "targetCommit": "edadbece423b100ff3513cd26670b1fc2631cbf3",
+      "dockerImage": "namanjain12/coveragepy_final:edadbece423b100ff3513cd26670b1fc2631cbf3",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 44,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 44,
+        "mismatchCount": 0,
+        "patchSha256": "0a9c07472c7e9181fcd44f69d23c66be794a25bd76e552c328e9e0a3935df413",
+        "changedPaths": [
+          "coverage/config.py"
+        ]
+      },
+      "expectedStatusCount": 44,
+      "valid": true,
+      "durationMs": 3910
+    },
+    {
+      "taskId": "r2e-gym__datalad__16c1ffc349df566151db0beb6d355ca27266bb8c",
+      "repo": "datalad/datalad",
+      "baseCommit": "fddce1e754d3de26d1c719f10c6a64f7af7ccb40",
+      "targetCommit": "16c1ffc349df566151db0beb6d355ca27266bb8c",
+      "dockerImage": "namanjain12/datalad_final:16c1ffc349df566151db0beb6d355ca27266bb8c",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 8,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 8,
+        "mismatchCount": 0,
+        "patchSha256": "6d2124194671fecbbf166ad6813a9135fef118fc5a3666ccccddf770aa59e701",
+        "changedPaths": [
+          "datalad/interface/utils.py"
+        ]
+      },
+      "expectedStatusCount": 8,
+      "valid": true,
+      "durationMs": 4255
+    },
+    {
+      "taskId": "r2e-gym__numpy__ffb31122739950a0b1ef67d44539613661c9deac",
+      "repo": "numpy/numpy",
+      "baseCommit": "fffe1fb03561b361c736e5f6771dc8a0721eb440",
+      "targetCommit": "ffb31122739950a0b1ef67d44539613661c9deac",
+      "dockerImage": "namanjain12/numpy_final:ffb31122739950a0b1ef67d44539613661c9deac",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 229,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 229,
+        "mismatchCount": 0,
+        "patchSha256": "57155a07d5c0d8f73160a1f7389f7752f49a3e904fe5ab0d423a0086e6d9120d",
+        "changedPaths": [
+          "numpy/ma/core.py"
+        ]
+      },
+      "expectedStatusCount": 229,
+      "valid": true,
+      "durationMs": 3312
+    },
+    {
+      "taskId": "r2e-gym__orange3__f9f4e59d016fb4e52f6480dcb0bc69a49ed0d831",
+      "repo": "biolab/orange3",
+      "baseCommit": "6c742f75b95cee79c48855700459e7c4d82428da",
+      "targetCommit": "f9f4e59d016fb4e52f6480dcb0bc69a49ed0d831",
+      "dockerImage": "namanjain12/orange3_final:f9f4e59d016fb4e52f6480dcb0bc69a49ed0d831",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 27,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 27,
+        "mismatchCount": 0,
+        "patchSha256": "e09ff28096d4949540ef4dfd7e7e0bf4c80c6b1bbc59a52d0947bc7ce03dde4e",
+        "changedPaths": [
+          "Orange/widgets/model/owlogisticregression.py"
+        ]
+      },
+      "expectedStatusCount": 27,
+      "valid": true,
+      "durationMs": 12487
+    },
+    {
+      "taskId": "r2e-gym__pandas__b4ff385bbbdaee684ee0d26b81a652aa1b2bc3de",
+      "repo": "pandas-dev/pandas",
+      "baseCommit": "c110f27decb686ae05f4ce0b5ca601ba76447531",
+      "targetCommit": "b4ff385bbbdaee684ee0d26b81a652aa1b2bc3de",
+      "dockerImage": "namanjain12/pandas_final:b4ff385bbbdaee684ee0d26b81a652aa1b2bc3de",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 234,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 234,
+        "mismatchCount": 0,
+        "patchSha256": "e9a976a229543f83b05754c490e9c023bece17db625ad48e4ac533970f8a7b62",
+        "changedPaths": [
+          "doc/source/whatsnew/v2.0.0.rst",
+          "pandas/core/generic.py",
+          "pandas/core/window/expanding.py"
+        ]
+      },
+      "expectedStatusCount": 234,
+      "valid": true,
+      "durationMs": 6222
+    },
+    {
+      "taskId": "r2e-gym__pillow__3c482b1b0b286aa5bc54c6a4547d92abe7b87e75",
+      "repo": "python-pillow/Pillow",
+      "baseCommit": "ad9614be7a1b9fa5c9a43f99def78e56d3ca8ed7",
+      "targetCommit": "3c482b1b0b286aa5bc54c6a4547d92abe7b87e75",
+      "dockerImage": "namanjain12/pillow_final:3c482b1b0b286aa5bc54c6a4547d92abe7b87e75",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 1,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 1,
+        "mismatchCount": 0,
+        "patchSha256": "ff405a47345b7a5914fcfffb411eac92a8674e67bfb38187cc51fbf853621ecf",
+        "changedPaths": [
+          "src/PIL/Image.py"
+        ]
+      },
+      "expectedStatusCount": 1,
+      "valid": true,
+      "durationMs": 2045
+    },
+    {
+      "taskId": "r2e-gym__pyramid__d545eef5f5411c0236f04ead9e4e52d93d9a2451",
+      "repo": "Pylons/pyramid",
+      "baseCommit": "55f9eb0bb0b72fe60ecde7529edbc27aceade187",
+      "targetCommit": "d545eef5f5411c0236f04ead9e4e52d93d9a2451",
+      "dockerImage": "namanjain12/pyramid_final:d545eef5f5411c0236f04ead9e4e52d93d9a2451",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 832,
+        "mismatchCount": 2
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 832,
+        "mismatchCount": 0,
+        "patchSha256": "96da9a80d9ba798a9cd28b1a036aefe1b4d18e229e1d46523fbede1ad90adf14",
+        "changedPaths": [
+          "src/pyramid/exceptions.py"
+        ]
+      },
+      "expectedStatusCount": 832,
+      "valid": true,
+      "durationMs": 9982
+    },
+    {
+      "taskId": "r2e-gym__scrapy__b6a023ce987a064b222b1aa2de03a50991f387fe",
+      "repo": "scrapy/scrapy",
+      "baseCommit": "e66f64989409ddf9117f854934d52b2772aace74",
+      "targetCommit": "b6a023ce987a064b222b1aa2de03a50991f387fe",
+      "dockerImage": "namanjain12/scrapy_final:b6a023ce987a064b222b1aa2de03a50991f387fe",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 9,
+        "mismatchCount": 6
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 9,
+        "mismatchCount": 0,
+        "patchSha256": "497e11606f9269869834b4d9072f8d7c5ccfb1fa076a7420fcf5694d334ee6d5",
+        "changedPaths": [
+          "scrapy/utils/conf.py"
+        ]
+      },
+      "expectedStatusCount": 9,
+      "valid": true,
+      "durationMs": 2751
+    },
+    {
+      "taskId": "r2e-gym__tornado__0a706fa666da91162466ae0d0d79d6dbfe923216",
+      "repo": "tornadoweb/tornado",
+      "baseCommit": "608c6072bbe39bd0bb9d1ac7dd0455992f9fc2a1",
+      "targetCommit": "0a706fa666da91162466ae0d0d79d6dbfe923216",
+      "dockerImage": "namanjain12/tornado_final:0a706fa666da91162466ae0d0d79d6dbfe923216",
+      "negative": {
+        "matched": false,
+        "actualStatusCount": 20,
+        "mismatchCount": 1
+      },
+      "gold": {
+        "matched": true,
+        "actualStatusCount": 20,
+        "mismatchCount": 0,
+        "patchSha256": "54e63939fd84f9572742fb113e33ec9baec7ca40e0326b2b1eb034f3aa2ffa26",
+        "changedPaths": [
+          "tornado/auth.py"
+        ]
+      },
+      "expectedStatusCount": 20,
+      "valid": true,
+      "durationMs": 1714
+    }
+  ]
+}

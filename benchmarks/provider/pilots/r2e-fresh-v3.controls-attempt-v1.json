@@ -1,0 +1,19 @@
+{
+  "schema": "archeagent.r2e-control-attempt.v1",
+  "corpus": "r2e-fresh-v3",
+  "revision": 1,
+  "recordedAt": "2026-10-02",
+  "privateAuthorityTasksSha256": "d53527949877b3371669b2ab56dd24e7dd0db098e626055c80780be1a6287170",
+  "taskCount": 10,
+  "validCount": 9,
+  "allValid": false,
+  "blockingTask": {
+    "taskId": "r2e-gym__pillow__3c482b1b0b286aa5bc54c6a4547d92abe7b87e75",
+    "repo": "python-pillow/Pillow",
+    "negativeMatched": false,
+    "goldMatched": false,
+    "diagnosis": "Dataset expected test key retained ANSI formatting while actual pytest parser normalized it. Gold source patch behavior passed, but authority-key normalization made exact-map comparison fail."
+  },
+  "modelRunsStarted": false,
+  "disposition": "REJECTED_BEFORE_MODEL_EXECUTION"
+}

@@ -616,6 +616,10 @@ function safeIdPart(value) {
   return value.replace(/[^A-Za-z0-9_.-]+/g, '_');
 }
 
+function stripR2EAnsi(value) {
+  return String(value).replace(/\u001b\[[0-9;]*m/g, '');
+}
+
 function normalizeExpectedStatuses(raw) {
   let parsed;
   try {
@@ -638,10 +642,20 @@ function normalizeExpectedStatuses(raw) {
 
   const normalized = {};
   for (const [name, status] of Object.entries(parsed)) {
-    const testName = requiredString(name, 'expected test name').split(' - ')[0];
+    const testName = stripR2EAnsi(
+      requiredString(name, 'expected test name').split(' - ')[0],
+    ).trim();
+    if (!testName) {
+      throw new Error('expected test name is empty after ANSI normalization');
+    }
     if (!['PASSED', 'FAILED', 'ERROR'].includes(status)) {
       throw new Error(
         'unsupported R2E expected status for ' + testName + ': ' + String(status),
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(normalized, testName)) {
+      throw new Error(
+        'duplicate expected test name after ANSI normalization: ' + testName,
       );
     }
     normalized[testName] = status;
@@ -756,7 +770,7 @@ export function parseR2EPytestStatuses(log) {
     if (status !== 'PASSED') {
       name = name.split(' - ')[0];
     }
-    name = name.replace(/\u001b\[\d+m/g, '').split(' - ')[0].trim();
+    name = stripR2EAnsi(name).split(' - ')[0].trim();
     if (name) statuses[name] = status;
   }
 

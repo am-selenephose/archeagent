@@ -201,7 +201,7 @@ The harness is implemented and locally validated. It now has two real-task autho
 - the original SWE-Rebench development pilot, whose first-attempt failures remain preserved;
 - an R2E-Gym hidden-authority path that freezes fresh tasks before execution and evaluates candidate patches in post-agent, network-disabled authority containers.
 
-For r2e-fresh-v1, 10 fresh tasks passed base/gold authority controls before model execution. The frozen local qwen2.5-14b-am primary ledger recorded 1 pass and 9 failures with zero retries. Authority v2 subsequently added candidate test-path rejection and explicit changed-path receipts; it does not rewrite the historical v1 score. A separate r2e-fresh-v2 development baseline recorded 0/10 first-attempt passes with zero retries; its exact final task artifact was later revalidated 10/10 against base/gold authority controls, so it is documented as post-hoc revalidated rather than preregistered. Post-primary convergence v3.1 then hardened no-op edit handling, remaining-step pressure, safe missing-path recovery, and source-only benchmark policy surfacing; its three-task diagnostic recorded 0 passes and is kept strictly separate from the frozen primary score.
+For r2e-fresh-v1, 10 fresh tasks passed base/gold authority controls before model execution. The frozen local qwen2.5-14b-am primary ledger recorded 1 pass and 9 failures with zero retries. Authority v2 subsequently added candidate test-path rejection and explicit changed-path receipts; it does not rewrite the historical v1 score. A separate r2e-fresh-v2 development baseline recorded 0/10 first-attempt passes with zero retries; its exact final task artifact was later revalidated 10/10 against base/gold authority controls, so it is documented as post-hoc revalidated rather than preregistered. Post-primary convergence v3.1 then hardened no-op edit handling, remaining-step pressure, safe missing-path recovery, and source-only benchmark policy surfacing; its three-task diagnostic recorded 0 passes and is kept strictly separate from the frozen primary score. The preregistered r2e-fresh-v3 corpus then froze 10 explicit unseen rows, passed 10/10 exact authority controls before model execution, and ran one revision-2 local-Qwen first attempt per task: 0 passes, 10 failures, zero retries, and one counted harness error. Later convergence/source-only hardening is recorded as post-primary and does not rewrite that v3 primary.
 
 See benchmarks/provider/README.md for the data contract and evidence bundle.
 
@@ -209,8 +209,8 @@ See benchmarks/provider/README.md for the data contract and evidence bundle.
 
 The repository contains:
 
-- 27 TypeScript test files;
-- 122 TypeScript tests;
+- 28 TypeScript test files;
+- 131 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
@@ -223,6 +223,7 @@ The repository contains:
 - a preserved Qwen primary ledger with 2 scored first attempts, 0 passes, and 0 retries;
 - separate post-pilot diagnostic receipts that do not rewrite the primary ledger;
 - a post-hoc exact-revalidated R2E v2 development baseline with 10 frozen first attempts and zero retries;
+- a preregistered R2E v3 corpus with 10/10 pre-run controls and a preserved 10-run local-Qwen primary ledger at 0/10 with zero retries;
 - bounded large-source navigation (`read_lines` plus streaming search) so oversized source files no longer hard-crash the local adapter.
 
 Run the complete gate with:
@@ -244,6 +245,6 @@ It does not currently claim:
 - automatic high-risk merge authority;
 - universal formal verification.
 
-The next empirical stage is a fresh R2E-Gym v3 corpus whose exact final task artifact passes authority controls before any model execution, followed by the same unseen corpus across multiple provider agents. Those real outcomes can then feed Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
+The next empirical stage is a new unseen R2E-Gym corpus frozen with the same exact authority controls, then evaluated across multiple provider agents under one locked harness revision. Those cross-provider outcomes can feed Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
 
 See docs/ARCHITECTURE.md and docs/RESEARCH_POSITIONING.md.
