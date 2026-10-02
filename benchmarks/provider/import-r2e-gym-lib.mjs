@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { findForbiddenSourceOnlyPaths } from './path-policy.mjs';
 
 const SHA40 = /^[0-9a-f]{40}$/;
 
@@ -782,43 +783,7 @@ export function statusMapsEqual(left, right) {
   );
 }
 
-export function findForbiddenR2ECandidatePaths(paths) {
-  if (!Array.isArray(paths)) {
-    throw new Error('R2E candidate paths must be an array');
-  }
-
-  const forbidden = new Set();
-
-  for (const value of paths) {
-    if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error('R2E candidate path must be a non-empty string');
-    }
-
-    const portable = value.trim().replaceAll('\\', '/');
-    const parts = portable.split('/').filter(Boolean);
-    const basename = (parts.at(-1) ?? '').toLowerCase();
-    const lowerParts = parts.map((part) => part.toLowerCase());
-
-    const isTestPath =
-      lowerParts.includes('test') ||
-      lowerParts.includes('tests') ||
-      lowerParts.includes('r2e_tests') ||
-      basename === 'conftest.py' ||
-      /^test_/.test(basename) ||
-      /_test\.(py|js|jsx|ts|tsx|go|rs)$/.test(basename);
-
-    const isHiddenAuthority =
-      portable === '.archeagent-hidden' ||
-      portable.startsWith('.archeagent-hidden/');
-
-    if (isTestPath || isHiddenAuthority) {
-      forbidden.add(portable);
-    }
-  }
-
-  return [...forbidden].sort();
-}
-
+export const findForbiddenR2ECandidatePaths = findForbiddenSourceOnlyPaths;
 function validateDockerImage(repoName, targetCommit, value) {
   const image = requiredString(value, 'docker_image');
   const expected = 'namanjain12/' + repoName + '_final:' + targetCommit;

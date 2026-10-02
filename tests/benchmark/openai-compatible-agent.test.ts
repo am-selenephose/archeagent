@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -928,6 +928,95 @@ describe('OpenAI-compatible local coding agent', () => {
           path: '../secret.txt',
         }),
       })).rejects.toThrow(/inside the repository/i);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('enforces source-only edit policy without weakening normal source edits', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await mkdir(join(dir, 'tests'), { recursive: true });
+      await writeFile(join(dir, 'tests', 'test_module.py'), 'value = 1\n', 'utf8');
+      await writeFile(join(dir, 'module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'tests/test_module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'finish', summary: 'updated source only' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Fix the source implementation, not tests.',
+        editPolicy: 'source-only',
+        maxSteps: 5,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 0) {
+            expect(messages[0]?.content).toContain('Do not modify test files');
+          }
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('EDIT_POLICY_FORBIDDEN_PATH');
+            expect(payload).toContain('tests/test_module.py');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'EDIT_POLICY_FORBIDDEN_PATH',
+        path: 'tests/test_module.py',
+      });
+      expect(await readFile(join(dir, 'tests', 'test_module.py'), 'utf8'))
+        .toBe('value = 1\n');
+      expect(await readFile(join(dir, 'module.py'), 'utf8'))
+        .toBe('value = 2\n');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps unrestricted edit policy as the default', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await mkdir(join(dir, 'tests'), { recursive: true });
+      await writeFile(join(dir, 'tests', 'test_module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'tests/test_module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'finish', summary: 'updated requested file' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Update the requested file.',
+        maxSteps: 4,
+        complete: async () => JSON.stringify(replies[index++]),
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+      expect(await readFile(join(dir, 'tests', 'test_module.py'), 'utf8'))
+        .toBe('value = 2\n');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

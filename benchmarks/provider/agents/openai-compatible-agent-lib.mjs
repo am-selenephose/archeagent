@@ -9,6 +9,7 @@ import {
 } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { findForbiddenSourceOnlyPaths } from '../path-policy.mjs';
 
 const MAX_FILE_BYTES = 64 * 1024;
 const MAX_LIST_FILES = 600;
@@ -750,7 +751,41 @@ function compactMessagesForModel(messages) {
   return [...base, compactionNotice, ...recent];
 }
 
-function systemPrompt() {
+function normalizeEditPolicy(value) {
+  const policy = value ?? 'unrestricted';
+  if (policy !== 'unrestricted' && policy !== 'source-only') {
+    throw new Error(
+      'editPolicy must be "unrestricted" or "source-only"',
+    );
+  }
+  return policy;
+}
+
+function editPolicyResult(action, editPolicy) {
+  if (
+    editPolicy !== 'source-only' ||
+    (action?.action !== 'replace_text' && action?.action !== 'write_file')
+  ) {
+    return null;
+  }
+
+  const safePath = validateRepoRelativePath(action.path);
+  const forbidden = findForbiddenSourceOnlyPaths([safePath]);
+  if (forbidden.length === 0) return null;
+
+  return {
+    toolError: true,
+    code: 'EDIT_POLICY_FORBIDDEN_PATH',
+    path: forbidden[0],
+    message:
+      'Do not modify test files, conftest files, or hidden authority files in source-only mode. ' +
+      'Fix the production/source implementation instead.',
+  };
+}
+
+function systemPrompt(editPolicy = 'unrestricted') {
+  const policy = normalizeEditPolicy(editPolicy);
+
   return [
     'You are a bounded coding agent operating inside one repository.',
     'Return exactly one JSON object per turn. Do not use Markdown fences.',
@@ -766,6 +801,11 @@ function systemPrompt() {
     'Inspect before editing. Make the smallest correct change.',
     'If read_file says FILE_TOO_LARGE, use search_text and read_lines instead of requesting the whole file.',
     'Prefer replace_text for small edits. Use write_file only when replacing or creating an entire file.',
+    ...(policy === 'source-only'
+      ? [
+          'Do not modify test files, conftest files, r2e_tests, or .archeagent-hidden authority files. Fix source/production code only.',
+        ]
+      : []),
     'Do not repeat an identical read/search/list action unless a source edit has changed the evidence.',
     'If several observation steps produce no edit, converge: use the strongest evidence and make the smallest supported source-code change.',
     'Never attempt to access .git or paths outside the repository.',
@@ -777,6 +817,7 @@ export async function runToolAgent({
   taskPrompt,
   complete,
   maxSteps = 24,
+  editPolicy = 'unrestricted',
 }) {
   if (typeof complete !== 'function') {
     throw new Error('complete must be a function');
@@ -785,9 +826,10 @@ export async function runToolAgent({
     throw new Error('task prompt must be non-empty');
   }
 
+  const normalizedEditPolicy = normalizeEditPolicy(editPolicy);
   const transcript = [];
   const messages = [
-    { role: 'system', content: systemPrompt() },
+    { role: 'system', content: systemPrompt(normalizedEditPolicy) },
     { role: 'user', content: taskPrompt },
   ];
 
@@ -826,7 +868,10 @@ export async function runToolAgent({
       continue;
     }
 
-    let result = duplicateObservationResult(action, transcript);
+    let result = editPolicyResult(action, normalizedEditPolicy);
+    if (!result) {
+      result = duplicateObservationResult(action, transcript);
+    }
     if (!result) {
       try {
         result = await applyAction(cwd, action);

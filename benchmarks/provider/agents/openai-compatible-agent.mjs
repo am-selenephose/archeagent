@@ -11,6 +11,8 @@ const model =
   process.env.ARCHEAGENT_AGENT_MODEL ?? 'qwen2.5-14b-am';
 const apiKey = process.env.ARCHEAGENT_AGENT_API_KEY || undefined;
 const maxSteps = Number(process.env.ARCHEAGENT_AGENT_MAX_STEPS ?? '24');
+const editPolicy =
+  process.env.ARCHEAGENT_AGENT_EDIT_POLICY ?? 'unrestricted';
 
 const complete = createOpenAICompatibleCompleter({
   baseUrl,
@@ -24,12 +26,14 @@ const result = await runToolAgent({
   taskPrompt: prompt,
   complete,
   maxSteps,
+  editPolicy,
 });
 
 process.stdout.write(
   JSON.stringify({
     schema: 'archeagent.openai-compatible-agent.v1',
     model,
+    editPolicy,
     finished: result.finished,
     steps: result.steps,
     actions: result.transcript.map((entry) => entry.action),
