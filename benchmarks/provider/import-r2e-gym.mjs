@@ -35,6 +35,7 @@ async function main() {
     offset: options.offset,
     page,
     count: options.count,
+    rowIndices: options.rowIndices,
   });
 
   if (frozen.tasks.length !== options.count) {

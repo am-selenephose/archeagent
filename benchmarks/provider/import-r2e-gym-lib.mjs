@@ -33,6 +33,7 @@ export function parseR2EImportArgs(argv) {
     'offset',
     'source-length',
     'count',
+    'row-indices',
     'out',
     'manifest',
   ]);
@@ -81,12 +82,51 @@ export function parseR2EImportArgs(argv) {
     min: 1,
     max: 100,
   });
-  const count = integerOption('count', 10, {
+  let count = integerOption('count', 10, {
     min: 1,
     max: sourceLength,
   });
   if (count > sourceLength) {
     throw new Error('--count cannot exceed --source-length');
+  }
+
+  let rowIndices = null;
+  if (values.has('row-indices')) {
+    const raw = requiredString(values.get('row-indices'), '--row-indices');
+    const pieces = raw.split(',').map((value) => value.trim());
+    if (
+      pieces.length === 0 ||
+      pieces.some((value) => !/^(0|[1-9]\d*)$/.test(value))
+    ) {
+      throw new Error('--row-indices must be comma-separated non-negative integers');
+    }
+
+    rowIndices = pieces.map(Number);
+    if (new Set(rowIndices).size !== rowIndices.length) {
+      throw new Error('--row-indices contains a duplicate row index');
+    }
+
+    const pageStart = offset;
+    const pageEndExclusive = offset + sourceLength;
+    const outsidePage = rowIndices.find(
+      (value) => value < pageStart || value >= pageEndExclusive,
+    );
+    if (outsidePage !== undefined) {
+      throw new Error(
+        '--row-indices row ' +
+          outsidePage +
+          ' is outside the fetched page [' +
+          pageStart +
+          ', ' +
+          pageEndExclusive +
+          ')',
+      );
+    }
+
+    if (values.has('count') && count !== rowIndices.length) {
+      throw new Error('--count must match --row-indices length');
+    }
+    count = rowIndices.length;
   }
 
   const manifest = values.has('manifest')
@@ -98,6 +138,7 @@ export function parseR2EImportArgs(argv) {
     offset,
     sourceLength,
     count,
+    rowIndices,
     out,
     manifest,
   };
@@ -272,6 +313,7 @@ export async function fetchR2ERowPage(
  *     totalRows: number
  *   },
  *   count: number,
+ *   rowIndices?: number[] | null,
  *   resolveBaseCommit?: (
  *     input: { repoUrl: string, targetCommit: string }
  *   ) => Promise<string>
@@ -282,6 +324,7 @@ export async function freezeR2ECorpus({
   offset = 0,
   page,
   count,
+  rowIndices = null,
   resolveBaseCommit = resolveR2EBaseCommit,
 } = {}) {
   const normalizedSplit = requiredString(split, 'split');
@@ -300,15 +343,48 @@ export async function freezeR2ECorpus({
     throw new Error('resolveBaseCommit must be a function');
   }
 
-  const selectedRecords = selectBalancedR2ERows(
-    page.entries.map((entry) => entry.record),
-    count,
-  );
-  const selectedEntries = selectedRecords.map((record) => {
-    const entry = page.entries.find((candidate) => candidate.record === record);
-    if (!entry) throw new Error('selected R2E row lost its source index');
-    return entry;
-  });
+  let selectedEntries;
+  if (rowIndices !== null) {
+    if (!Array.isArray(rowIndices) || rowIndices.length !== count) {
+      throw new Error('rowIndices must be an array whose length matches count');
+    }
+    if (
+      rowIndices.some(
+        (value) => !Number.isInteger(value) || value < 0,
+      )
+    ) {
+      throw new Error('rowIndices must contain non-negative integers');
+    }
+    if (new Set(rowIndices).size !== rowIndices.length) {
+      throw new Error('rowIndices contains a duplicate row index');
+    }
+
+    selectedEntries = rowIndices.map((rowIndex) => {
+      const entry = page.entries.find(
+        (candidate) => candidate.rowIndex === rowIndex,
+      );
+      if (!entry) {
+        throw new Error(
+          'requested R2E row ' +
+            rowIndex +
+            ' is not present in the fetched page',
+        );
+      }
+      return entry;
+    });
+  } else {
+    const selectedRecords = selectBalancedR2ERows(
+      page.entries.map((entry) => entry.record),
+      count,
+    );
+    selectedEntries = selectedRecords.map((record) => {
+      const entry = page.entries.find(
+        (candidate) => candidate.record === record,
+      );
+      if (!entry) throw new Error('selected R2E row lost its source index');
+      return entry;
+    });
+  }
 
   const frozenEntries = [];
   const tasks = [];
@@ -344,6 +420,7 @@ export async function freezeR2ECorpus({
       offset,
       sourceRows: page.entries.length,
       entries: frozenEntries,
+      rowIndices,
     }),
   };
 }
@@ -424,7 +501,8 @@ export async function resolveR2EBaseCommit({ repoUrl, targetCommit } = {}) {
  *   split: string,
  *   offset?: number,
  *   sourceRows: number,
- *   entries: Array<{ rowIndex: number, record: any, baseCommit: string }>
+ *   entries: Array<{ rowIndex: number, record: any, baseCommit: string }>,
+ *   rowIndices?: number[] | null
  * }} options
  */
 export function makeR2ECorpusManifest({
@@ -432,6 +510,7 @@ export function makeR2ECorpusManifest({
   offset = 0,
   sourceRows,
   entries,
+  rowIndices = null,
 } = {}) {
   const normalizedSplit = requiredString(split, 'split');
   if (!Number.isInteger(offset) || offset < 0) {
@@ -489,7 +568,7 @@ export function makeR2ECorpusManifest({
     };
   });
 
-  return {
+  const manifest = {
     schema: 'archeagent.r2e-corpus-manifest.v1',
     dataset: R2E_DATASET,
     config: R2E_CONFIG,
@@ -499,6 +578,21 @@ export function makeR2ECorpusManifest({
     selectedRows: safeEntries.length,
     entries: safeEntries,
   };
+
+  if (rowIndices !== null) {
+    if (
+      !Array.isArray(rowIndices) ||
+      rowIndices.length !== safeEntries.length
+    ) {
+      throw new Error(
+        'manifest rowIndices must match the selected entry count',
+      );
+    }
+    manifest.selectionMode = 'explicit-row-indices';
+    manifest.rowIndices = [...rowIndices];
+  }
+
+  return manifest;
 }
 
 

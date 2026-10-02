@@ -470,6 +470,54 @@ describe('R2E-Gym corpus freeze helpers', () => {
   });
 
 
+  it('freezes an explicit immutable row-index corpus without balanced reselection', async () => {
+    const records = Array.from({ length: 6 }, (_, rowIndex) => ({
+      ...source,
+      repo_name: rowIndex < 3 ? 'aiohttp' : 'pandas',
+      commit_hash: String(rowIndex + 1).repeat(40),
+      docker_image:
+        'namanjain12/' +
+        (rowIndex < 3 ? 'aiohttp' : 'pandas') +
+        '_final:' +
+        String(rowIndex + 1).repeat(40),
+    }));
+
+    const frozen = await freezeR2ECorpus({
+      split: 'dev_10pr_v1',
+      offset: 0,
+      page: {
+        totalRows: 100,
+        entries: records.map((record, rowIndex) => ({ rowIndex, record })),
+      },
+      count: 2,
+      rowIndices: [2, 5],
+      resolveBaseCommit: async () => '0'.repeat(40),
+    });
+
+    expect(frozen.tasks.map((task) => task.metadata.targetCommit)).toEqual([
+      '3'.repeat(40),
+      '6'.repeat(40),
+    ]);
+    expect(frozen.manifest).toMatchObject({
+      selectionMode: 'explicit-row-indices',
+      rowIndices: [2, 5],
+      selectedRows: 2,
+    });
+
+    await expect(freezeR2ECorpus({
+      split: 'dev_10pr_v1',
+      offset: 0,
+      page: {
+        totalRows: 100,
+        entries: records.map((record, rowIndex) => ({ rowIndex, record })),
+      },
+      count: 2,
+      rowIndices: [2, 99],
+      resolveBaseCommit: async () => '0'.repeat(40),
+    })).rejects.toThrow(/row.*99/i);
+  });
+
+
   it('parses a bounded corpus-freeze CLI contract', () => {
     expect(parseR2EImportArgs([
       '--out=/tmp/tasks.jsonl',
@@ -478,6 +526,7 @@ describe('R2E-Gym corpus freeze helpers', () => {
       offset: 0,
       sourceLength: 100,
       count: 10,
+      rowIndices: null,
       out: '/tmp/tasks.jsonl',
       manifest: '/tmp/tasks.jsonl.manifest.json',
     });
@@ -494,9 +543,32 @@ describe('R2E-Gym corpus freeze helpers', () => {
       offset: 20,
       sourceLength: 50,
       count: 7,
+      rowIndices: null,
       out: '/tmp/tasks.jsonl',
       manifest: '/tmp/manifest.json',
     });
+
+    expect(parseR2EImportArgs([
+      '--source-length=100',
+      '--count=3',
+      '--row-indices=3,12,22',
+      '--out=/tmp/tasks.jsonl',
+    ])).toMatchObject({
+      sourceLength: 100,
+      count: 3,
+      rowIndices: [3, 12, 22],
+    });
+
+    expect(() => parseR2EImportArgs([
+      '--count=2',
+      '--row-indices=3,12,22',
+      '--out=/tmp/tasks.jsonl',
+    ])).toThrow(/count.*row-indices/i);
+
+    expect(() => parseR2EImportArgs([
+      '--row-indices=3,3',
+      '--out=/tmp/tasks.jsonl',
+    ])).toThrow(/duplicate/i);
 
     expect(() => parseR2EImportArgs([])).toThrow(/--out/i);
     expect(() => parseR2EImportArgs([
