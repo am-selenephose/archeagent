@@ -552,19 +552,116 @@ function serializeActionForModel(action) {
   return JSON.stringify(action);
 }
 
-function makeStepBudget(step, maxSteps) {
+const OBSERVATION_ACTIONS = new Set([
+  'list_files',
+  'read_file',
+  'read_lines',
+  'search_text',
+]);
+
+function isSuccessfulEditEntry(entry) {
+  return (
+    (entry?.action === 'replace_text' || entry?.action === 'write_file') &&
+    entry?.result?.toolError !== true
+  );
+}
+
+function observationSignature(action) {
+  if (!action || !OBSERVATION_ACTIONS.has(action.action)) return null;
+
+  switch (action.action) {
+    case 'list_files':
+      return 'list_files';
+    case 'read_file':
+      return JSON.stringify(['read_file', action.path]);
+    case 'read_lines':
+      return JSON.stringify([
+        'read_lines',
+        action.path,
+        action.start_line,
+        action.end_line,
+      ]);
+    case 'search_text':
+      return JSON.stringify(['search_text', action.query]);
+    default:
+      return null;
+  }
+}
+
+function progressState(transcript) {
+  let successfulEditCount = 0;
+  let lastEditIndex = -1;
+
+  for (let index = 0; index < transcript.length; index += 1) {
+    if (!isSuccessfulEditEntry(transcript[index])) continue;
+    successfulEditCount += 1;
+    lastEditIndex = index;
+  }
+
+  const observations = transcript
+    .slice(lastEditIndex + 1)
+    .filter((entry) => OBSERVATION_ACTIONS.has(entry?.action));
+
+  const counts = new Map();
+  let duplicateObservationCount = 0;
+  for (const entry of observations) {
+    const signature = observationSignature(entry.request);
+    if (!signature) continue;
+    const seen = counts.get(signature) ?? 0;
+    if (seen > 0) duplicateObservationCount += 1;
+    counts.set(signature, seen + 1);
+  }
+
+  return {
+    explorationStreak: observations.length,
+    duplicateObservationCount,
+    successfulEditCount,
+  };
+}
+
+function duplicateObservationResult(action, transcript) {
+  const signature = observationSignature(action);
+  if (!signature) return null;
+
+  for (let index = transcript.length - 1; index >= 0; index -= 1) {
+    const entry = transcript[index];
+    if (isSuccessfulEditEntry(entry)) break;
+    if (observationSignature(entry?.request) !== signature) continue;
+
+    return {
+      toolError: true,
+      code: 'DUPLICATE_OBSERVATION',
+      message:
+        'This exact observation was already performed since the last source edit. ' +
+        'Use the existing evidence, inspect a different location, or make the smallest supported edit.',
+    };
+  }
+
+  return null;
+}
+
+function makeStepBudget(step, maxSteps, transcript = []) {
   const remaining = Math.max(0, maxSteps - step);
   const warningThreshold = Math.max(2, Math.ceil(maxSteps * 0.25));
+  const progress = progressState(transcript);
+  const stalled = progress.explorationStreak >= 6;
+
+  let convergenceWarning = null;
+  if (stalled) {
+    convergenceWarning =
+      'No source edit has been made across the recent observation streak. ' +
+      'Stop rereading or broad searching. Use the strongest evidence already gathered ' +
+      'to make the smallest supported source-code edit now, or finish only if no valid edit remains.';
+  } else if (remaining <= warningThreshold) {
+    convergenceWarning =
+      'Stop broad exploration. Use the strongest evidence already gathered to make the best source-code edit now, or finish if no valid edit remains.';
+  }
 
   return {
     used: step,
     remaining,
-    ...(remaining <= warningThreshold
-      ? {
-          convergenceWarning:
-            'Stop broad exploration. Use the strongest evidence already gathered to make the best source-code edit now, or finish if no valid edit remains.',
-        }
-      : {}),
+    ...progress,
+    ...(convergenceWarning ? { convergenceWarning } : {}),
   };
 }
 
@@ -669,6 +766,8 @@ function systemPrompt() {
     'Inspect before editing. Make the smallest correct change.',
     'If read_file says FILE_TOO_LARGE, use search_text and read_lines instead of requesting the whole file.',
     'Prefer replace_text for small edits. Use write_file only when replacing or creating an entire file.',
+    'Do not repeat an identical read/search/list action unless a source edit has changed the evidence.',
+    'If several observation steps produce no edit, converge: use the strongest evidence and make the smallest supported source-code change.',
     'Never attempt to access .git or paths outside the repository.',
   ].join('\n');
 }
@@ -727,13 +826,15 @@ export async function runToolAgent({
       continue;
     }
 
-    let result;
-    try {
-      result = await applyAction(cwd, action);
-    } catch (error) {
-      const recoverable = recoverableToolError(action, error);
-      if (!recoverable) throw error;
-      result = recoverable;
+    let result = duplicateObservationResult(action, transcript);
+    if (!result) {
+      try {
+        result = await applyAction(cwd, action);
+      } catch (error) {
+        const recoverable = recoverableToolError(action, error);
+        if (!recoverable) throw error;
+        result = recoverable;
+      }
     }
 
     transcript.push({ step, action: action.action, request: action, result });
@@ -747,7 +848,7 @@ export async function runToolAgent({
       content: serializeToolResultForModel(
         action,
         result,
-        makeStepBudget(step, maxSteps),
+        makeStepBudget(step, maxSteps, transcript),
       ),
     });
 

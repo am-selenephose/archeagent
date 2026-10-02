@@ -768,6 +768,112 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
+  it('rejects an exact duplicate observation until a source edit changes the evidence', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        { action: 'read_file', path: 'module.py' },
+        { action: 'read_file', path: 'module.py' },
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'read_file', path: 'module.py' },
+        { action: 'finish', summary: 'updated value' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Update the value.',
+        maxSteps: 8,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 2) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('DUPLICATE_OBSERVATION');
+            expect(payload).toContain('already performed');
+          }
+          if (index === 4) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('value = 2');
+            expect(payload).not.toContain('DUPLICATE_OBSERVATION');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 5 });
+      expect(result.transcript[1]?.result).toMatchObject({
+        toolError: true,
+        code: 'DUPLICATE_OBSERVATION',
+      });
+      expect(result.transcript[3]?.result).toMatchObject({
+        path: 'module.py',
+        content: 'value = 2\n',
+      });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('adds early no-progress pressure after a long observation streak without an edit', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      for (let index = 0; index < 6; index += 1) {
+        await writeFile(
+          join(dir, `file-${index}.py`),
+          `value_${index} = ${index}\n`,
+          'utf8',
+        );
+      }
+
+      const replies = [
+        { action: 'read_file', path: 'file-0.py' },
+        { action: 'read_file', path: 'file-1.py' },
+        { action: 'read_file', path: 'file-2.py' },
+        { action: 'read_file', path: 'file-3.py' },
+        { action: 'read_file', path: 'file-4.py' },
+        { action: 'read_file', path: 'file-5.py' },
+        {
+          action: 'replace_text',
+          path: 'file-0.py',
+          old_text: 'value_0 = 0',
+          new_text: 'value_0 = 1',
+        },
+        { action: 'finish', summary: 'made the best supported edit' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect the evidence and make the smallest supported edit.',
+        maxSteps: 20,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 6) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('convergenceWarning');
+            expect(payload).toContain('No source edit has been made');
+            expect(payload).toContain('"explorationStreak":6');
+            expect(payload).toContain('"remaining":14');
+          }
+          if (index === 7) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('"explorationStreak":0');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 8 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns a recoverable tool error when the model reads a missing file', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {
