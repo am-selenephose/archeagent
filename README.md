@@ -209,8 +209,8 @@ See benchmarks/provider/README.md for the data contract and evidence bundle.
 
 The repository contains:
 
-- 27 TypeScript test files;
-- 122 TypeScript tests;
+- 28 TypeScript test files;
+- 131 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
