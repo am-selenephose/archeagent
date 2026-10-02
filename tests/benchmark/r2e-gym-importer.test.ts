@@ -106,6 +106,44 @@ describe('R2E-Gym authority importer', () => {
     });
   });
 
+  it('normalizes ANSI formatting in expected status keys before freezing authority', () => {
+    const task = convertR2EGymRecord(
+      {
+        ...source,
+        expected_output_json: JSON.stringify({
+          '\u001b[1mtest_getxmp\u001b[0m': 'PASSED',
+        }),
+      },
+      { baseCommit },
+    );
+
+    const evaluator = task.evaluator.files.find((file) =>
+      file.path.endsWith('.evaluate.mjs'),
+    );
+    const expectedLine = evaluator?.content
+      .split('\n')
+      .find((line) => line.startsWith('const expectedStatuses = '));
+
+    expect(expectedLine).toBe(
+      'const expectedStatuses = {"test_getxmp":"PASSED"};',
+    );
+  });
+
+  it('rejects expected status keys that collide after ANSI normalization', () => {
+    expect(() =>
+      convertR2EGymRecord(
+        {
+          ...source,
+          expected_output_json: JSON.stringify({
+            '\u001b[1mtest_same\u001b[0m': 'PASSED',
+            test_same: 'FAILED',
+          }),
+        },
+        { baseCommit },
+      ),
+    ).toThrow(/duplicate.*normalization/i);
+  });
+
   it('rejects candidate changes to test or hidden-authority paths', () => {
     expect(findForbiddenR2ECandidatePaths([
       'scrapy/downloadermiddlewares/redirect.py',
