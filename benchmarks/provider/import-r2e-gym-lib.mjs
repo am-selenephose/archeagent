@@ -920,6 +920,7 @@ export function convertR2EGymRecord(record, { baseCommit } = {}) {
       evaluatorRuntime: 'r2e-authority-docker',
       authorityNetwork: 'none',
       hiddenTestsVisibleToAgent: false,
+      candidatePathPolicy: 'source-only-no-tests',
     },
   };
 }

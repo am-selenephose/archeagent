@@ -291,6 +291,14 @@ async function replaceRepoText(cwd, path, oldText, newText) {
     throw error;
   }
 
+  if (oldText === newText) {
+    const error = new Error(
+      'replace_text must change file content; old_text and new_text are identical',
+    );
+    error.code = 'NO_OP_REPLACE';
+    throw error;
+  }
+
   const next =
     current.slice(0, first) +
     newText +
@@ -436,6 +444,20 @@ function recoverableToolError(action, error) {
     action?.action === 'replace_text' &&
     error &&
     typeof error === 'object' &&
+    error.code === 'ENOENT'
+  ) {
+    return {
+      toolError: true,
+      code: 'ENOENT',
+      path: validateRepoRelativePath(action.path),
+      message: 'file not found: ' + validateRepoRelativePath(action.path),
+    };
+  }
+
+  if (
+    action?.action === 'replace_text' &&
+    error &&
+    typeof error === 'object' &&
     error.code === 'REPLACE_MATCH_COUNT'
   ) {
     return {
@@ -443,6 +465,20 @@ function recoverableToolError(action, error) {
       code: 'REPLACE_MATCH_COUNT',
       matchCount:
         Number.isInteger(error.matchCount) ? error.matchCount : null,
+      message: error.message,
+    };
+  }
+
+  if (
+    action?.action === 'replace_text' &&
+    error &&
+    typeof error === 'object' &&
+    error.code === 'NO_OP_REPLACE'
+  ) {
+    return {
+      toolError: true,
+      code: 'NO_OP_REPLACE',
+      path: validateRepoRelativePath(action.path),
       message: error.message,
     };
   }
@@ -516,7 +552,23 @@ function serializeActionForModel(action) {
   return JSON.stringify(action);
 }
 
-function serializeToolResultForModel(action, result) {
+function makeStepBudget(step, maxSteps) {
+  const remaining = Math.max(0, maxSteps - step);
+  const warningThreshold = Math.max(2, Math.ceil(maxSteps * 0.25));
+
+  return {
+    used: step,
+    remaining,
+    ...(remaining <= warningThreshold
+      ? {
+          convergenceWarning:
+            'Stop broad exploration. Use the strongest evidence already gathered to make the best source-code edit now, or finish if no valid edit remains.',
+        }
+      : {}),
+  };
+}
+
+function serializeToolResultForModel(action, result, stepBudget) {
   if (
     (action.action === 'read_file' || action.action === 'read_lines') &&
     typeof result?.content === 'string'
@@ -542,10 +594,11 @@ function serializeToolResultForModel(action, result) {
         toolResultTruncated: compacted.truncated,
         originalChars: compacted.originalChars,
       },
+      stepBudget,
     });
   }
 
-  const serialized = JSON.stringify({ toolResult: result });
+  const serialized = JSON.stringify({ toolResult: result, stepBudget });
   if (serialized.length <= MAX_MODEL_TOOL_RESULT_CHARS) {
     return serialized;
   }
@@ -560,6 +613,7 @@ function serializeToolResultForModel(action, result) {
     action: action.action,
     originalChars: serialized.length,
     preview: preview.text,
+    stepBudget,
   });
 }
 
@@ -690,7 +744,11 @@ export async function runToolAgent({
     });
     messages.push({
       role: 'user',
-      content: serializeToolResultForModel(action, result),
+      content: serializeToolResultForModel(
+        action,
+        result,
+        makeStepBudget(step, maxSteps),
+      ),
     });
 
     if (action.action === 'finish') {

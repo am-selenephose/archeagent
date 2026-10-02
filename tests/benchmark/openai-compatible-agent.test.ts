@@ -607,6 +607,167 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
+
+  it('rejects no-op replace_text edits as a recoverable tool result', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 1',
+        },
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'finish', summary: 'changed value' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Change value from 1 to 2.',
+        maxSteps: 5,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('NO_OP_REPLACE');
+            expect(payload).toContain('must change file content');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+      expect(result.transcript[0]?.result).toMatchObject({
+        toolError: true,
+        code: 'NO_OP_REPLACE',
+      });
+      expect(await readFile(join(dir, 'module.py'), 'utf8')).toBe(
+        'value = 2\n',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('surfaces the remaining step budget after each tool turn', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        { action: 'read_file', path: 'module.py' },
+        { action: 'finish', summary: 'inspected' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect module.py.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('"stepBudget"');
+            expect(payload).toContain('"used":1');
+            expect(payload).toContain('"remaining":3');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 2 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+
+  it('returns a recoverable tool error when replace_text targets a missing safe path', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'real.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        {
+          action: 'replace_text',
+          path: 'guessed.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'list_files' },
+        {
+          action: 'replace_text',
+          path: 'real.py',
+          old_text: 'value = 1',
+          new_text: 'value = 2',
+        },
+        { action: 'finish', summary: 'recovered' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Change the source value.',
+        maxSteps: 6,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 1) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('toolError');
+            expect(payload).toContain('ENOENT');
+            expect(payload).toContain('guessed.py');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 4 });
+      expect(await readFile(join(dir, 'real.py'), 'utf8')).toBe('value = 2\n');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('adds convergence pressure when the remaining step budget is low', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(join(dir, 'module.py'), 'value = 1\n', 'utf8');
+
+      const replies = [
+        { action: 'read_file', path: 'module.py' },
+        { action: 'read_file', path: 'module.py' },
+        { action: 'finish', summary: 'done' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect and decide.',
+        maxSteps: 4,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 2) {
+            const payload = messages.at(-1)?.content ?? '';
+            expect(payload).toContain('convergenceWarning');
+            expect(payload).toContain('Stop broad exploration');
+            expect(payload).toContain('"remaining":2');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 3 });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('returns a recoverable tool error when the model reads a missing file', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {

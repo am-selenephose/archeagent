@@ -58,6 +58,7 @@ describe('R2E-Gym authority importer', () => {
         targetCommit,
         dockerImage: source.docker_image,
         expectedStatusCount: 3,
+        candidatePathPolicy: 'source-only-no-tests',
       },
     });
 

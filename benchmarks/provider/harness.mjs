@@ -408,11 +408,20 @@ export async function runBenchmarkTask(task, agent) {
       );
     }
 
+    const candidatePolicy =
+      task.metadata?.candidatePathPolicy === 'source-only-no-tests'
+        ? [
+            'Do not modify tests, test files, conftest.py, or .archeagent-hidden paths.',
+            'Change source implementation only; benchmark authority files are evaluator-owned.',
+          ]
+        : [];
+
     const agentPrompt = [
       task.prompt,
       '',
       'Work only inside the current repository.',
       'Hidden evaluator assets do not exist in the worktree while you run.',
+      ...candidatePolicy,
       'Make the smallest correct patch and leave changes in the worktree.',
     ].join('\n');
 

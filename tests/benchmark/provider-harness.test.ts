@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -222,6 +222,78 @@ describe('provider benchmark harness', () => {
         changedPaths: ['answer.txt'],
         changedPathCount: 1,
       }));
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+
+  it('tells constrained agents not to modify benchmark authority paths', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'archeagent-policy-prompt-'));
+    const sourceRepo = join(fixture, 'source');
+    const agentScript = join(fixture, 'agent.mjs');
+    const capturedPrompt = join(fixture, 'agent-prompt.txt');
+
+    try {
+      await exec(['git', 'init', '--quiet', sourceRepo], fixture);
+      await exec(['git', 'config', 'user.email', 'benchmark@example.invalid'], sourceRepo);
+      await exec(['git', 'config', 'user.name', 'Benchmark Fixture'], sourceRepo);
+      await writeFile(join(sourceRepo, 'answer.txt'), 'bad\n', 'utf8');
+      await exec(['git', 'add', '.'], sourceRepo);
+      await exec(['git', 'commit', '--quiet', '-m', 'fixture'], sourceRepo);
+
+      const commit = await new Promise<string>((resolve, reject) => {
+        const child = spawn('git', ['rev-parse', 'HEAD'], {
+          cwd: sourceRepo,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          shell: false,
+        });
+        let stdout = '';
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => { stdout += chunk; });
+        child.on('error', reject);
+        child.on('close', (code) =>
+          code === 0 ? resolve(stdout.trim()) : reject(new Error('rev-parse failed')),
+        );
+      });
+
+      await writeFile(
+        agentScript,
+        [
+          "import { writeFileSync } from 'node:fs';",
+          "let input = '';",
+          "process.stdin.setEncoding('utf8');",
+          "for await (const chunk of process.stdin) input += chunk;",
+          `writeFileSync(${JSON.stringify(capturedPrompt)}, input);`,
+          "writeFileSync('answer.txt', 'good\\n');",
+        ].join('\n'),
+        'utf8',
+      );
+
+      const task = parseTaskDataset(JSON.stringify({
+        id: 'policy-prompt',
+        repo: 'fixture/local',
+        repoUrl: sourceRepo,
+        baseCommit: commit,
+        prompt: 'Fix the source implementation.',
+        metadata: {
+          candidatePathPolicy: 'source-only-no-tests',
+        },
+        evaluator: {
+          commands: [['node', '--version']],
+        },
+      }))[0]!;
+
+      const [agent] = validateAgentMatrix([
+        { id: 'fixture-agent', argv: ['node', agentScript], timeoutMs: 30_000 },
+      ]);
+
+      await runBenchmarkTask(task, agent!);
+      const prompt = await readFile(capturedPrompt, 'utf8');
+
+      expect(prompt).toContain('Do not modify tests');
+      expect(prompt).toContain('conftest.py');
+      expect(prompt).toContain('.archeagent-hidden');
     } finally {
       await rm(fixture, { recursive: true, force: true });
     }

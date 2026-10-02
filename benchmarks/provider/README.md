@@ -385,3 +385,29 @@ Public evidence:
 
 The next clean empirical run should use a new unseen v3 corpus with exact final-artifact controls completed before any model attempt.
 
+### Convergence v3.1 post-primary diagnostic
+
+After the frozen r2e-fresh-v2 primary run, three representative failure classes were replayed on the same frozen tasks using a separately versioned diagnostic agent. This diagnostic does not replace or improve the frozen 0/10 primary score.
+
+The adapter changes were generic and benchmark-visible rather than task-specific:
+
+- replace_text rejects identical old/new text as a recoverable NO_OP_REPLACE result;
+- every model-facing tool result carries used/remaining step budget;
+- the final quarter of the step budget carries an explicit convergence warning to stop broad exploration and make the best supported source edit or finish;
+- safe-path replace_text ENOENT is recoverable so guessed source paths do not crash the agent;
+- R2E tasks declare a source-only-no-tests candidate policy;
+- the harness tells constrained agents not to modify tests, conftest.py, or .archeagent-hidden authority paths before execution.
+
+Observed diagnostic outcomes:
+
+- Pyramid: produced a source patch and exited cleanly; hidden authority rejected the patch semantically.
+- Orange3: the prior missing-path hard crash was removed; the agent exited cleanly but produced no patch.
+- Coverage.py: the prior candidate test-file mutation did not recur; the agent exited cleanly but produced no patch.
+
+The diagnostic recorded 0/3 passes. Its value is failure-class separation and adapter robustness, not a performance claim.
+
+Evidence:
+
+- benchmarks/provider/pilots/r2e-convergence-v31-diagnostic.summary.json
+- benchmarks/provider/results/r2e-convergence-v31-diagnostic.jsonl
+
