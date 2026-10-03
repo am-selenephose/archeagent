@@ -314,6 +314,100 @@ async function runEvaluatorCommand(argv, cwd, timeoutMs) {
   return runProcess(argv, { cwd, timeoutMs });
 }
 
+function isTransientCloneFailure(result) {
+  if (result?.timedOut === true) return true;
+  const stderr = String(result?.stderr ?? '').toLowerCase();
+  return [
+    'fatal: early eof',
+    'rpc failed',
+    'curl 18',
+    'curl 56',
+    'connection reset',
+    'remote end hung up unexpectedly',
+    'gnutls recv error',
+    'tls connection',
+    'http/2 stream',
+    'unexpected disconnect',
+  ].some((needle) => stderr.includes(needle));
+}
+
+/**
+ * @param {{
+ *   repoUrl: string,
+ *   repoDir: string,
+ *   run?: (
+ *     argv: string[],
+ *     options?: {
+ *       cwd?: string,
+ *       input?: string,
+ *       env?: Record<string, string>,
+ *       timeoutMs?: number
+ *     }
+ *   ) => Promise<{
+ *     exitCode: number | null,
+ *     timedOut?: boolean,
+ *     stderr?: string,
+ *     stdout?: string
+ *   }>,
+ *   maxAttempts?: number
+ * }} options
+ * @returns {Promise<{ attempts: number }>}
+ */
+export async function cloneRepositoryWithRetry({
+  repoUrl,
+  repoDir,
+  run = runProcess,
+  maxAttempts = 2,
+} = {}) {
+  if (typeof repoUrl !== 'string' || repoUrl.trim() === '') {
+    throw new Error('repoUrl must be a non-empty string');
+  }
+  if (typeof repoDir !== 'string' || repoDir.trim() === '') {
+    throw new Error('repoDir must be a non-empty string');
+  }
+  if (typeof run !== 'function') {
+    throw new Error('clone run function is required');
+  }
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 3) {
+    throw new Error('maxAttempts must be an integer between 1 and 3');
+  }
+
+  let lastResult = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const result = await run(
+      [
+        'git',
+        'clone',
+        '--quiet',
+        '--no-checkout',
+        repoUrl,
+        repoDir,
+      ],
+      { timeoutMs: 300000 },
+    );
+    lastResult = result;
+
+    if (result.exitCode === 0 && result.timedOut !== true) {
+      return { attempts: attempt };
+    }
+
+    const retryable =
+      attempt < maxAttempts && isTransientCloneFailure(result);
+    if (!retryable) {
+      throw new Error(
+        'git clone failed: ' + String(result.stderr ?? '').trim(),
+      );
+    }
+
+    await rm(repoDir, { recursive: true, force: true });
+  }
+
+  throw new Error(
+    'git clone failed after retries: ' +
+      String(lastResult?.stderr ?? '').trim(),
+  );
+}
+
 function githubUrl(repo) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) {
     throw new Error('repo must be owner/name for default GitHub cloning');
@@ -326,20 +420,10 @@ export async function runBenchmarkTask(task, agent) {
   const repoDir = join(workspace, 'repo');
 
   try {
-    const clone = await runProcess(
-      [
-        'git',
-        'clone',
-        '--quiet',
-        '--no-checkout',
-        task.repoUrl ?? githubUrl(task.repo),
-        repoDir,
-      ],
-      { timeoutMs: 300000 },
-    );
-    if (clone.exitCode !== 0) {
-      throw new Error('git clone failed: ' + clone.stderr.trim());
-    }
+    const cloneReceipt = await cloneRepositoryWithRetry({
+      repoUrl: task.repoUrl ?? githubUrl(task.repo),
+      repoDir,
+    });
 
     const checkout = await runProcess(
       [
@@ -493,6 +577,7 @@ export async function runBenchmarkTask(task, agent) {
       baseCommit: task.baseCommit,
       agentId: agent.id,
       agentFingerprint: agent.fingerprint,
+      cloneAttempts: cloneReceipt.attempts,
       setupRuns,
       passed,
       changed,

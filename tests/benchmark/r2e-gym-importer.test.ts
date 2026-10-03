@@ -7,6 +7,7 @@ import {
   buildR2ERowsUrl,
   convertR2EGymRecord,
   extractR2ERowPage,
+  extractExcludedR2ERowIndexes,
   fetchR2ERowPage,
   findForbiddenR2ECandidatePaths,
   freezeR2ECorpus,
@@ -16,6 +17,7 @@ import {
   resolveR2EBaseCommit,
   selectBalancedR2ERows,
   statusMapsEqual,
+  summarizeR2EStatusComparison,
 } from '../../benchmarks/provider/import-r2e-gym-lib.mjs';
 
 const targetCommit = '6d3d1fcf2583eb7b8330b194c00356ce169b2ebd';
@@ -172,8 +174,11 @@ describe('R2E-Gym authority importer', () => {
     expect(evaluator?.content).toContain("git', '-C', repoDir, 'diff', '--name-only'");
     expect(evaluator?.content).toContain('findForbiddenR2ECandidatePaths');
     expect(evaluator?.content).toContain(
-      "schema: 'archeagent.r2e-authority-result.v2'",
+      "schema: 'archeagent.r2e-authority-result.v3'",
     );
+    expect(evaluator?.content).toContain('mismatchedStatusCount');
+    expect(evaluator?.content).toContain('missingExpectedCount');
+    expect(evaluator?.content).toContain('unexpectedActualCount');
   });
 
   it('compares status maps exactly rather than trusting pytest exit code', () => {
@@ -556,6 +561,95 @@ describe('R2E-Gym corpus freeze helpers', () => {
   });
 
 
+  it('summarizes authority mismatches without exposing hidden test names', () => {
+    expect(summarizeR2EStatusComparison(
+      {
+        alpha: 'PASSED',
+        beta: 'PASSED',
+        extra: 'ERROR',
+      },
+      {
+        alpha: 'PASSED',
+        beta: 'FAILED',
+        missing: 'ERROR',
+      },
+    )).toEqual({
+      matched: false,
+      mismatchedStatusCount: 1,
+      missingExpectedCount: 1,
+      unexpectedActualCount: 1,
+      expectedStatusCounts: {
+        PASSED: 1,
+        FAILED: 1,
+        ERROR: 1,
+      },
+      actualStatusCounts: {
+        PASSED: 2,
+        FAILED: 0,
+        ERROR: 1,
+      },
+    });
+
+    expect(JSON.stringify(
+      summarizeR2EStatusComparison(
+        { hidden_name: 'PASSED' },
+        { hidden_name: 'FAILED' },
+      ),
+    )).not.toContain('hidden_name');
+  });
+
+  it('extracts prior frozen row indexes from a matching manifest', () => {
+    const manifest = {
+      schema: 'archeagent.r2e-corpus-manifest.v1',
+      dataset: 'R2E-Gym/R2E-Gym-Lite',
+      split: 'dev_10pr_v1',
+      entries: [
+        { rowIndex: 10 },
+        { rowIndex: 1 },
+        { rowIndex: 10 },
+      ],
+    };
+
+    expect(
+      extractExcludedR2ERowIndexes(manifest, { split: 'dev_10pr_v1' }),
+    ).toEqual([1, 10]);
+
+    expect(() =>
+      extractExcludedR2ERowIndexes(
+        { ...manifest, split: 'dev_100pr_v1' },
+        { split: 'dev_10pr_v1' },
+      ),
+    ).toThrow(/split/i);
+  });
+
+  it('excludes previously frozen row indexes before balanced selection', async () => {
+    const records = [
+      { ...source, repo_name: 'aiohttp', commit_hash: '1'.repeat(40), docker_image: 'namanjain12/aiohttp_final:' + '1'.repeat(40) },
+      { ...source, repo_name: 'aiohttp', commit_hash: '2'.repeat(40), docker_image: 'namanjain12/aiohttp_final:' + '2'.repeat(40) },
+      { ...source, repo_name: 'pandas', commit_hash: '3'.repeat(40), docker_image: 'namanjain12/pandas_final:' + '3'.repeat(40) },
+      { ...source, repo_name: 'pandas', commit_hash: '4'.repeat(40), docker_image: 'namanjain12/pandas_final:' + '4'.repeat(40) },
+    ];
+
+    const frozen = await freezeR2ECorpus({
+      split: 'dev_10pr_v1',
+      offset: 0,
+      page: {
+        totalRows: 4,
+        entries: records.map((record, rowIndex) => ({ rowIndex, record })),
+      },
+      count: 2,
+      excludeRowIndexes: [0, 2],
+      resolveBaseCommit: async () => '0'.repeat(40),
+    });
+
+    expect(frozen.tasks.map((task) => task.metadata.targetCommit)).toEqual([
+      '2'.repeat(40),
+      '4'.repeat(40),
+    ]);
+    expect(frozen.manifest.entries.map((entry) => entry.rowIndex)).toEqual([1, 3]);
+    expect(frozen.manifest.excludedRowIndexes).toEqual([0, 2]);
+  });
+
   it('parses a bounded corpus-freeze CLI contract', () => {
     expect(parseR2EImportArgs([
       '--out=/tmp/tasks.jsonl',
@@ -565,6 +659,7 @@ describe('R2E-Gym corpus freeze helpers', () => {
       sourceLength: 100,
       count: 10,
       rowIndices: null,
+      excludeManifest: null,
       out: '/tmp/tasks.jsonl',
       manifest: '/tmp/tasks.jsonl.manifest.json',
     });
@@ -576,12 +671,14 @@ describe('R2E-Gym corpus freeze helpers', () => {
       '--count=7',
       '--out=/tmp/tasks.jsonl',
       '--manifest=/tmp/manifest.json',
+      '--exclude-manifest=/tmp/old-manifest.json',
     ])).toEqual({
       split: 'dev_100pr_v7',
       offset: 20,
       sourceLength: 50,
       count: 7,
       rowIndices: null,
+      excludeManifest: '/tmp/old-manifest.json',
       out: '/tmp/tasks.jsonl',
       manifest: '/tmp/manifest.json',
     });

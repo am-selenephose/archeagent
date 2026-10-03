@@ -1022,6 +1022,91 @@ describe('OpenAI-compatible local coding agent', () => {
     }
   });
 
+  it('nudges repeated overlapping read windows toward a different action', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      const lines = Array.from(
+        { length: 700 },
+        (_, index) => `line-${index + 1}`,
+      );
+      lines[510] = 'TARGET should_close';
+      await writeFile(join(dir, 'module.py'), lines.join('\n') + '\n', 'utf8');
+
+      const replies = [
+        { action: 'read_lines', path: 'module.py', start_line: 500, end_line: 550 },
+        { action: 'read_lines', path: 'module.py', start_line: 490, end_line: 550 },
+        { action: 'read_lines', path: 'module.py', start_line: 480, end_line: 550 },
+        {
+          action: 'replace_text',
+          path: 'module.py',
+          old_text: 'TARGET should_close',
+          new_text: 'TARGET should_close_fixed',
+        },
+        { action: 'finish', summary: 'fixed target' },
+      ];
+      let index = 0;
+
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Fix the target.',
+        maxSteps: 8,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 3) {
+            expect(messages.at(-1)?.content).toContain('overlapping');
+            expect(messages.at(-1)?.content).toContain('different action');
+          }
+          return JSON.stringify(replies[index++]);
+        },
+      });
+
+      expect(result).toMatchObject({ finished: true, steps: 5 });
+      expect(await readFile(join(dir, 'module.py'), 'utf8')).toContain(
+        'TARGET should_close_fixed',
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('nudges long read-only streaks before the step budget is exhausted', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
+    try {
+      await writeFile(
+        join(dir, 'module.py'),
+        Array.from({ length: 300 }, (_, i) => `line-${i + 1}`).join('\n') + '\n',
+        'utf8',
+      );
+
+      let index = 0;
+      const result = await runToolAgent({
+        cwd: dir,
+        taskPrompt: 'Inspect then finish.',
+        maxSteps: 16,
+        complete: async (messages: AgentMessage[]) => {
+          if (index === 10) {
+            expect(messages.at(-1)?.content).toContain('read-only');
+            expect(messages.at(-1)?.content).toContain('step budget');
+            index += 1;
+            return JSON.stringify({ action: 'finish', summary: 'stopped browsing' });
+          }
+          const start = 1 + index * 5;
+          index += 1;
+          return JSON.stringify({
+            action: 'read_lines',
+            path: 'module.py',
+            start_line: start,
+            end_line: start + 4,
+          });
+        },
+      });
+
+      expect(result.finished).toBe(true);
+      expect(result.steps).toBe(11);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('refuses model attempts to write outside the repository', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'archeagent-local-agent-'));
     try {

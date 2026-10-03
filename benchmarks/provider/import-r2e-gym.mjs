@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import {
+  extractExcludedR2ERowIndexes,
   fetchR2ERowPage,
   freezeR2ECorpus,
   parseR2EImportArgs,
@@ -23,6 +24,27 @@ async function main() {
   if (resolve(options.out) === resolve(options.manifest)) {
     throw new Error('--out and --manifest must be different files');
   }
+  if (
+    options.excludeManifest &&
+    (
+      resolve(options.excludeManifest) === resolve(options.out) ||
+      resolve(options.excludeManifest) === resolve(options.manifest)
+    )
+  ) {
+    throw new Error(
+      '--exclude-manifest must be different from --out and --manifest',
+    );
+  }
+
+  let excludeRowIndexes = [];
+  if (options.excludeManifest) {
+    const previousManifest = JSON.parse(
+      await readFile(resolve(options.excludeManifest), 'utf8'),
+    );
+    excludeRowIndexes = extractExcludedR2ERowIndexes(previousManifest, {
+      split: options.split,
+    });
+  }
 
   const page = await fetchR2ERowPage({
     split: options.split,
@@ -36,6 +58,7 @@ async function main() {
     page,
     count: options.count,
     rowIndices: options.rowIndices,
+    excludeRowIndexes,
   });
 
   if (frozen.tasks.length !== options.count) {
@@ -64,6 +87,7 @@ async function main() {
       offset: frozen.manifest.offset,
       sourceRows: frozen.manifest.sourceRows,
       selectedRows: frozen.manifest.selectedRows,
+      excludedRows: frozen.manifest.excludedRowIndexes.length,
       out: resolve(options.out),
       manifest: resolve(options.manifest),
     }) + '\n',

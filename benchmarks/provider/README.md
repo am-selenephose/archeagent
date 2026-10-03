@@ -451,3 +451,28 @@ Evidence:
 - `benchmarks/provider/results/r2e-fresh-v3-qwen-summary.json`
 
 This is a preregistered local-model baseline, not a comparative provider ranking.
+
+### Forward authority v3 and unseen-corpus hardening
+
+After the frozen r2e-fresh-v3 primary completed, Archeagent added forward-only benchmark hardening. These changes do not rewrite any historical ledger or historical authority receipt.
+
+- R2E corpus freezing accepts a prior corpus manifest and excludes those row indexes before balanced selection. The resulting manifest records the excluded row indexes.
+- Authority result schema v3 adds aggregate mismatch diagnostics: mismatched status count, missing expected count, unexpected actual count, and PASSED/FAILED/ERROR totals. Hidden test names are not emitted by this summary.
+- The local bounded agent warns on three heavily overlapping read windows and on long read-only exploration streaks before the step budget is exhausted.
+- Repository cloning retries once only for recognized transient transport failures such as early EOF, RPC/curl/TLS disconnects, or timeout. Deterministic clone failures still fail immediately.
+- Successful benchmark receipts record cloneAttempts so transport recovery is auditable.
+
+Example unseen freeze:
+
+~~~bash
+node benchmarks/provider/import-r2e-gym.mjs \
+  --split=dev_10pr_v1 \
+  --source-length=100 \
+  --count=10 \
+  --exclude-manifest=benchmarks/provider/pilots/<prior>.manifest.json \
+  --out=/secure/path/r2e-next.jsonl \
+  --manifest=/secure/path/r2e-next.manifest.json
+~~~
+
+For multiple historical corpora, construct one validated exclusion manifest containing the union of previously frozen row entries, or use explicit row indices. The next clean benchmark must be frozen before model execution and must not reuse previously observed rows.
+

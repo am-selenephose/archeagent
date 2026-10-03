@@ -210,7 +210,7 @@ See benchmarks/provider/README.md for the data contract and evidence bundle.
 The repository contains:
 
 - 28 TypeScript test files;
-- 131 TypeScript tests;
+- 138 TypeScript tests;
 - PostgreSQL and Redis integration coverage for durable missions, replay/fencing, stream recovery, and production feedback;
 - ESLint;
 - Next.js production build;
@@ -245,6 +245,6 @@ It does not currently claim:
 - automatic high-risk merge authority;
 - universal formal verification.
 
-The next empirical stage is a new unseen R2E-Gym corpus frozen with the same exact authority controls, then evaluated across multiple provider agents under one locked harness revision. Those cross-provider outcomes can feed Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
+The next empirical stage is a new unseen R2E-Gym corpus frozen with the same exact authority controls and explicit prior-manifest exclusion, then evaluated across multiple provider agents under one locked harness revision. Forward hardening now also adds aggregate non-leaking authority mismatch diagnostics, bounded retry for recognized transient clone transport failures, and explicit local-agent warnings for overlapping/read-only exploration. Historical primary ledgers are not rewritten by these changes. Those cross-provider outcomes can feed Archeagent's learned routing and reviewer-selection calibration instead of relying on synthetic routing evidence alone.
 
 See docs/ARCHITECTURE.md and docs/RESEARCH_POSITIONING.md.

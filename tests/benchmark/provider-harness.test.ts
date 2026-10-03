@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   balancedSample,
+  cloneRepositoryWithRetry,
   parseTaskDataset,
   runBenchmarkTask,
   validateAgentMatrix,
@@ -27,6 +28,68 @@ function exec(argv: string[], cwd: string) {
 }
 
 describe('provider benchmark harness', () => {
+  it('retries one recognized transient git clone transport failure', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'archeagent-clone-retry-'));
+    const repoDir = join(fixture, 'repo');
+    let calls = 0;
+
+    try {
+      const result = await cloneRepositoryWithRetry({
+        repoUrl: 'https://github.com/example/repo.git',
+        repoDir,
+        run: async () => {
+          calls += 1;
+          if (calls === 1) {
+            return {
+              exitCode: 128,
+              timedOut: false,
+              stderr: 'fatal: early EOF',
+              stdout: '',
+            };
+          }
+          return {
+            exitCode: 0,
+            timedOut: false,
+            stderr: '',
+            stdout: '',
+          };
+        },
+      });
+
+      expect(result).toEqual({ attempts: 2 });
+      expect(calls).toBe(2);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it('does not retry deterministic git clone failures', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'archeagent-clone-no-retry-'));
+    const repoDir = join(fixture, 'repo');
+    let calls = 0;
+
+    try {
+      await expect(cloneRepositoryWithRetry({
+        repoUrl: 'https://github.com/example/missing.git',
+        repoDir,
+        run: async () => {
+          calls += 1;
+          return {
+            exitCode: 128,
+            timedOut: false,
+            stderr: 'fatal: repository not found',
+            stdout: '',
+          };
+        },
+      })).rejects.toThrow(/repository not found/i);
+
+      expect(calls).toBe(1);
+    } finally {
+      await rm(fixture, { recursive: true, force: true });
+    }
+  });
+
+
   it('loads executable repository tasks without exposing hidden evaluator commands in prompts', () => {
     const tasks = parseTaskDataset([
       JSON.stringify({

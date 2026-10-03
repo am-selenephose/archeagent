@@ -641,19 +641,83 @@ function duplicateObservationResult(action, transcript) {
   return null;
 }
 
+function readWindowOverlapRatio(left, right) {
+  if (
+    left?.action !== 'read_lines' ||
+    right?.action !== 'read_lines' ||
+    left?.path !== right?.path ||
+    !Number.isInteger(left?.start_line) ||
+    !Number.isInteger(left?.end_line) ||
+    !Number.isInteger(right?.start_line) ||
+    !Number.isInteger(right?.end_line)
+  ) {
+    return 0;
+  }
+
+  const leftLength = left.end_line - left.start_line + 1;
+  const rightLength = right.end_line - right.start_line + 1;
+  const intersection =
+    Math.min(left.end_line, right.end_line) -
+    Math.max(left.start_line, right.start_line) +
+    1;
+
+  if (leftLength <= 0 || rightLength <= 0 || intersection <= 0) return 0;
+  return intersection / Math.min(leftLength, rightLength);
+}
+
+function repeatedOverlapWarning(transcript) {
+  const recentReads = transcript
+    .filter((entry) => entry?.action === 'read_lines')
+    .slice(-3);
+
+  if (
+    recentReads.length !== 3 ||
+    recentReads.some(
+      (entry) =>
+        typeof entry.request?.path !== 'string' ||
+        entry.request.path !== recentReads[0]?.request?.path,
+    )
+  ) {
+    return null;
+  }
+
+  if (
+    readWindowOverlapRatio(
+      recentReads[0]?.request,
+      recentReads[1]?.request,
+    ) < 0.8 ||
+    readWindowOverlapRatio(
+      recentReads[1]?.request,
+      recentReads[2]?.request,
+    ) < 0.8
+  ) {
+    return null;
+  }
+
+  return (
+    'Progress warning: you are repeatedly reading heavily overlapping windows ' +
+    'in the same file. Choose a different action: use search_text, inspect a ' +
+    'targeted non-overlapping range, make the smallest justified source edit, or finish.'
+  );
+}
+
 function makeStepBudget(step, maxSteps, transcript = []) {
   const remaining = Math.max(0, maxSteps - step);
   const warningThreshold = Math.max(2, Math.ceil(maxSteps * 0.25));
   const progress = progressState(transcript);
   const stalled = progress.explorationStreak >= 6;
 
-  let convergenceWarning = null;
-  if (stalled) {
+  let convergenceWarning = repeatedOverlapWarning(transcript);
+  if (!convergenceWarning && stalled) {
     convergenceWarning =
       'No source edit has been made across the recent observation streak. ' +
-      'Stop rereading or broad searching. Use the strongest evidence already gathered ' +
-      'to make the smallest supported source-code edit now, or finish only if no valid edit remains.';
-  } else if (remaining <= warningThreshold) {
+      'You have spent ' +
+      progress.explorationStreak +
+      ' consecutive read-only actions without changing the repository. ' +
+      'The step budget is being consumed. Stop rereading or broad searching. ' +
+      'Use the strongest evidence already gathered to make the smallest supported source-code edit now, ' +
+      'or finish only if no valid edit remains.';
+  } else if (!convergenceWarning && remaining <= warningThreshold) {
     convergenceWarning =
       'Stop broad exploration. Use the strongest evidence already gathered to make the best source-code edit now, or finish if no valid edit remains.';
   }

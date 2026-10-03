@@ -37,6 +37,7 @@ export function parseR2EImportArgs(argv) {
     'row-indices',
     'out',
     'manifest',
+    'exclude-manifest',
   ]);
 
   for (const arg of argv) {
@@ -133,6 +134,9 @@ export function parseR2EImportArgs(argv) {
   const manifest = values.has('manifest')
     ? requiredString(values.get('manifest'), '--manifest')
     : out + '.manifest.json';
+  const excludeManifest = values.has('exclude-manifest')
+    ? requiredString(values.get('exclude-manifest'), '--exclude-manifest')
+    : null;
 
   return {
     split,
@@ -140,6 +144,7 @@ export function parseR2EImportArgs(argv) {
     sourceLength,
     count,
     rowIndices,
+    excludeManifest,
     out,
     manifest,
   };
@@ -277,6 +282,54 @@ export function extractR2ERowPage(payload) {
 }
 
 /**
+ * @param {any} manifest
+ * @param {{ split: string }} options
+ * @returns {number[]}
+ */
+export function extractExcludedR2ERowIndexes(
+  manifest,
+  { split } = {},
+) {
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error('exclude manifest must be an object');
+  }
+  if (manifest.schema !== 'archeagent.r2e-corpus-manifest.v1') {
+    throw new Error('exclude manifest must use R2E corpus manifest schema v1');
+  }
+  if (manifest.dataset !== R2E_DATASET) {
+    throw new Error('exclude manifest dataset does not match ' + R2E_DATASET);
+  }
+
+  const normalizedSplit = requiredString(split, 'split');
+  if (manifest.split !== normalizedSplit) {
+    throw new Error(
+      'exclude manifest split ' +
+        String(manifest.split) +
+        ' does not match requested split ' +
+        normalizedSplit,
+    );
+  }
+  if (!Array.isArray(manifest.entries)) {
+    throw new Error('exclude manifest entries must be an array');
+  }
+
+  const indexes = new Set();
+  for (const entry of manifest.entries) {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      !Number.isInteger(entry.rowIndex) ||
+      entry.rowIndex < 0
+    ) {
+      throw new Error('exclude manifest rowIndex must be a non-negative integer');
+    }
+    indexes.add(entry.rowIndex);
+  }
+
+  return [...indexes].sort((left, right) => left - right);
+}
+
+/**
  * @param {{ split: string, offset?: number, length?: number }} options
  * @param {{
  *   fetchImpl?: (url: string) => Promise<{
@@ -315,6 +368,7 @@ export async function fetchR2ERowPage(
  *   },
  *   count: number,
  *   rowIndices?: number[] | null,
+ *   excludeRowIndexes?: number[],
  *   resolveBaseCommit?: (
  *     input: { repoUrl: string, targetCommit: string }
  *   ) => Promise<string>
@@ -326,6 +380,7 @@ export async function freezeR2ECorpus({
   page,
   count,
   rowIndices = null,
+  excludeRowIndexes = [],
   resolveBaseCommit = resolveR2EBaseCommit,
 } = {}) {
   const normalizedSplit = requiredString(split, 'split');
@@ -342,6 +397,17 @@ export async function freezeR2ECorpus({
   }
   if (typeof resolveBaseCommit !== 'function') {
     throw new Error('resolveBaseCommit must be a function');
+  }
+  if (!Array.isArray(excludeRowIndexes)) {
+    throw new Error('excludeRowIndexes must be an array');
+  }
+
+  const excluded = new Set();
+  for (const rowIndex of excludeRowIndexes) {
+    if (!Number.isInteger(rowIndex) || rowIndex < 0) {
+      throw new Error('excludeRowIndexes must contain non-negative integers');
+    }
+    excluded.add(rowIndex);
   }
 
   let selectedEntries;
@@ -360,6 +426,13 @@ export async function freezeR2ECorpus({
       throw new Error('rowIndices contains a duplicate row index');
     }
 
+    const explicitlyExcluded = rowIndices.find((rowIndex) => excluded.has(rowIndex));
+    if (explicitlyExcluded !== undefined) {
+      throw new Error(
+        'explicit row index ' + explicitlyExcluded + ' is excluded by prior manifest',
+      );
+    }
+
     selectedEntries = rowIndices.map((rowIndex) => {
       const entry = page.entries.find(
         (candidate) => candidate.rowIndex === rowIndex,
@@ -374,12 +447,21 @@ export async function freezeR2ECorpus({
       return entry;
     });
   } else {
+    const eligibleEntries = page.entries.filter(
+      (entry) => !excluded.has(entry.rowIndex),
+    );
+    if (eligibleEntries.length < count) {
+      throw new Error(
+        'R2E exclusions leave fewer remaining rows than requested count',
+      );
+    }
+
     const selectedRecords = selectBalancedR2ERows(
-      page.entries.map((entry) => entry.record),
+      eligibleEntries.map((entry) => entry.record),
       count,
     );
     selectedEntries = selectedRecords.map((record) => {
-      const entry = page.entries.find(
+      const entry = eligibleEntries.find(
         (candidate) => candidate.record === record,
       );
       if (!entry) throw new Error('selected R2E row lost its source index');
@@ -422,6 +504,7 @@ export async function freezeR2ECorpus({
       sourceRows: page.entries.length,
       entries: frozenEntries,
       rowIndices,
+      excludedRowIndexes: [...excluded].sort((left, right) => left - right),
     }),
   };
 }
@@ -503,7 +586,8 @@ export async function resolveR2EBaseCommit({ repoUrl, targetCommit } = {}) {
  *   offset?: number,
  *   sourceRows: number,
  *   entries: Array<{ rowIndex: number, record: any, baseCommit: string }>,
- *   rowIndices?: number[] | null
+ *   rowIndices?: number[] | null,
+ *   excludedRowIndexes?: number[]
  * }} options
  */
 export function makeR2ECorpusManifest({
@@ -512,6 +596,7 @@ export function makeR2ECorpusManifest({
   sourceRows,
   entries,
   rowIndices = null,
+  excludedRowIndexes = [],
 } = {}) {
   const normalizedSplit = requiredString(split, 'split');
   if (!Number.isInteger(offset) || offset < 0) {
@@ -523,6 +608,19 @@ export function makeR2ECorpusManifest({
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new Error('manifest entries must be a non-empty array');
   }
+  if (!Array.isArray(excludedRowIndexes)) {
+    throw new Error('excludedRowIndexes must be an array');
+  }
+  const safeExcludedRowIndexes = [...new Set(excludedRowIndexes)].map(
+    (rowIndex) => {
+      if (!Number.isInteger(rowIndex) || rowIndex < 0) {
+        throw new Error(
+          'excludedRowIndexes must contain non-negative integers',
+        );
+      }
+      return rowIndex;
+    },
+  ).sort((left, right) => left - right);
 
   const safeEntries = entries.map((entry) => {
     if (!entry || typeof entry !== 'object') {
@@ -577,6 +675,7 @@ export function makeR2ECorpusManifest({
     offset,
     sourceRows,
     selectedRows: safeEntries.length,
+    excludedRowIndexes: safeExcludedRowIndexes,
     entries: safeEntries,
   };
 
@@ -797,6 +896,57 @@ export function statusMapsEqual(left, right) {
   );
 }
 
+export function summarizeR2EStatusComparison(
+  actualStatuses,
+  expectedStatuses,
+) {
+  const actual =
+    actualStatuses && typeof actualStatuses === 'object'
+      ? actualStatuses
+      : {};
+  const expected =
+    expectedStatuses && typeof expectedStatuses === 'object'
+      ? expectedStatuses
+      : {};
+
+  const statusKeys = ['PASSED', 'FAILED', 'ERROR'];
+  const countStatuses = (statuses) => {
+    const counts = { PASSED: 0, FAILED: 0, ERROR: 0 };
+    for (const status of Object.values(statuses)) {
+      if (statusKeys.includes(status)) counts[status] += 1;
+    }
+    return counts;
+  };
+
+  let mismatchedStatusCount = 0;
+  let missingExpectedCount = 0;
+  let unexpectedActualCount = 0;
+
+  for (const [name, expectedStatus] of Object.entries(expected)) {
+    if (!(name in actual)) {
+      missingExpectedCount += 1;
+      continue;
+    }
+    if (actual[name] !== expectedStatus) mismatchedStatusCount += 1;
+  }
+
+  for (const name of Object.keys(actual)) {
+    if (!(name in expected)) unexpectedActualCount += 1;
+  }
+
+  return {
+    matched:
+      mismatchedStatusCount === 0 &&
+      missingExpectedCount === 0 &&
+      unexpectedActualCount === 0,
+    mismatchedStatusCount,
+    missingExpectedCount,
+    unexpectedActualCount,
+    expectedStatusCounts: countStatuses(expected),
+    actualStatusCounts: countStatuses(actual),
+  };
+}
+
 export const findForbiddenR2ECandidatePaths = findForbiddenSourceOnlyPaths;
 function validateDockerImage(repoName, targetCommit, value) {
   const image = requiredString(value, 'docker_image');
@@ -816,6 +966,7 @@ function makeR2EEvaluator({
 }) {
   const parserSource = parseR2EPytestStatuses.toString();
   const compareSource = statusMapsEqual.toString();
+  const summarySource = summarizeR2EStatusComparison.toString();
   const forbiddenPathSource = findForbiddenR2ECandidatePaths.toString();
 
   return [
@@ -826,6 +977,7 @@ function makeR2EEvaluator({
     '',
     'const parseR2EPytestStatuses = ' + parserSource + ';',
     'const statusMapsEqual = ' + compareSource + ';',
+    'const summarizeR2EStatusComparison = ' + summarySource + ';',
     'const findForbiddenR2ECandidatePaths = ' + forbiddenPathSource + ';',
     '',
     'const image = ' + JSON.stringify(image) + ';',
@@ -911,10 +1063,20 @@ function makeR2EEvaluator({
     "  }",
     '',
     "  const actualStatuses = parseR2EPytestStatuses(output);",
+    "  const comparison = summarizeR2EStatusComparison(actualStatuses, expectedStatuses);",
     "  const matched = statusMapsEqual(actualStatuses, expectedStatuses);",
+    "  if (comparison.matched !== matched) {",
+    "    console.error('R2E status comparison invariant mismatch');",
+    "    process.exit(4);",
+    "  }",
     "  console.log(JSON.stringify({",
-    "    schema: 'archeagent.r2e-authority-result.v2',",
+    "    schema: 'archeagent.r2e-authority-result.v3',",
     "    matched,",
+    "    mismatchedStatusCount: comparison.mismatchedStatusCount,",
+    "    missingExpectedCount: comparison.missingExpectedCount,",
+    "    unexpectedActualCount: comparison.unexpectedActualCount,",
+    "    expectedStatusCounts: comparison.expectedStatusCounts,",
+    "    actualStatusCounts: comparison.actualStatusCounts,",
     "    dockerExitCode: result.status,",
     "    expectedStatusCount: Object.keys(expectedStatuses).length,",
     "    actualStatusCount: Object.keys(actualStatuses).length,",
