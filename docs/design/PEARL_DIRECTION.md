@@ -1,39 +1,43 @@
-# Archeagent visual language: Pearl / Obsidian
+# Archeagent / Holographic Obsidian and Mother of Pearl
 
-Two high-fidelity material finishes for the real Archeagent Next.js interface.
+This document shows real browser captures of the current Next.js UI branch,
+not generated static mockups.
 
-## Obsidian
+## Dark theme: holographic obsidian
 
-![Obsidian desktop browser capture](previews/obsidian-desktop.webp)
+![Obsidian desktop](previews/obsidian-desktop.webp)
 
-Deep mineral-black surfaces, low-chroma violet reflections, holographic mint, lilac and blush, with a restrained pearlescent glass finish.
+Full UI surface uses graphite/obsidian, oil-slick lilac, cyan and rose
+reflections, subtle slow waves and delicate glass borders.
 
-## Pearl
+## Light theme: mother-of-pearl
 
-![Pearl light desktop browser capture](previews/pearl-desktop.webp)
+![Light pearl desktop](previews/pearl-desktop.webp)
 
-Iridescent mother-of-pearl white, muted lavender, translucent porcelain cards, and readable ink-colored typography.
+Full UI surface is pearlescent ivory with nacre interference waves, muted
+lavender/rose/cyan and etched pane-like cards.
 
-## Mobile proofs
+## Mobile browser captures
 
-| Obsidian | Pearl |
+| Dark | Light |
 | --- | --- |
-| ![Obsidian on mobile](previews/obsidian-mobile.webp) | ![Pearl on mobile](previews/pearl-mobile.webp) |
+| ![Obsidian mobile](previews/obsidian-mobile.webp) | ![Pearl mobile](previews/pearl-mobile.webp) |
 
-## Typography
+## Font approval and licensing
 
-Manrope carries the product interface, navigation, buttons and body copy.
-Instrument Serif supplies the editorial accent in headings and monogram.
-Geist Mono remains for machine-readable status labels and verification values.
+The owner chose AXUNO by VPcreativeshop / Only Fonts for big display headings
+and brand typography. The commercial Webfont file is not yet supplied;
+screenshots use Jost 300 as a clearly identified fallback, NOT Axuno.
+Body copy uses Jost 400. Technical statuses use Geist Mono.
+See AXUNO_FONT.md for license and activation details.
 
-## Behavior
+## Functional QA
 
-- Both themes are implemented in CSS, not rendered images.
-- Theme switch is keyboard-accessible and persists the chosen appearance.
-- Holographic material is restrained to surface highlights and decorative artwork.
-- The real evaluation console, routes and release-policy semantics remain intact.
-- Reduced-motion preferences disable decorative pearl animation.
-- Local browser QA completed at 1440px and 393px; no page-level JS errors or horizontal overflow.
-- The feature demo remains a fixture, not a claim that independent live agents are running.
-
-Previews are browser captures of the implementation, not design mockups.
+- Actual Next.js production build and ESLint pass.
+- 10 focused Vitest tests pass.
+- Browser checks: 1440px desktop and 390px mobile.
+- Theme toggle persists across reloads.
+- No horizontal overflow or page JavaScript errors.
+- The previous decorative pearl sphere was removed entirely.
+- Existing eval console, API routes and Concord gate remain functional.
+- Respect reduced motion. Demo evaluation fixtures are not live model sessions.

@@ -549,3 +549,207 @@ html[data-theme="light"] .gate-icon { color:#70619a; }
   .pearl-object { animation:none; }
   *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; }
 }
+
+
+/* -----------------------------------------------------------------------
+   AXUNO DESIGN SYSTEM / LICENSE-GATED DISPLAY FACE
+   The exact Axuno demo is personal-use only. CSS local() detects an already
+   installed licensed copy. A commercially licensed webfont must be added
+   separately, following docs/design/AXUNO_FONT.md.
+   ----------------------------------------------------------------------- */
+@font-face {
+  font-family: "Axuno";
+  src: local("Axuno"), local("Axuno Regular");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+:root { --font-display-axuno: "Axuno", var(--font-atelier), "Jost", sans-serif; }
+body {
+  font-family: var(--font-atelier), "Jost", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  font-feature-settings: "kern" 1;
+}
+.brand-wordmark,
+.hero h1,
+.section-intro h2,
+.architecture-copy h2 {
+  font-family: var(--font-display-axuno);
+  font-weight: 300;
+  font-style: normal;
+  font-synthesis: none;
+  letter-spacing: -0.027em;
+}
+.hero h1 {
+  font-size: clamp(47px, 5.7vw, 84px);
+  font-weight: 300;
+  letter-spacing: -0.034em;
+  line-height: 1.16;
+  max-width: 100%;
+}
+.hero h1 em {
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-style: normal;
+}
+.brand-wordmark {
+  font-size: 15px;
+  letter-spacing: -0.019em;
+  font-weight: 400;
+}
+.brand-mark { font-family: var(--font-display-axuno); font-weight: 400; }
+.section-intro h2, .architecture-copy h2 {
+  font-family: var(--font-display-axuno);
+  font-size: clamp(29px, 3.5vw, 46px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.13;
+}
+.section-intro h2 em { font: inherit; font-style: normal; color:var(--editorial-accent); }
+.console-topbar h2, .lifecycle-header h2 {
+  font-family: var(--font-atelier), "Jost", sans-serif;
+  font-size: clamp(19px, 2.5vw, 30px);
+  font-weight: 300;
+  letter-spacing: -0.034em;
+}
+.nav-links, .theme-switch, .nav-cta,
+.primary-action, .secondary-action, .run-button, .capability-card h3 {
+  font-family: var(--font-atelier), "Jost", sans-serif;
+  letter-spacing: -0.02em;
+}
+.nav-links, .theme-switch { font-weight: 400; }
+.nav-cta, .primary-action, .secondary-action, .run-button { font-weight: 500; }
+.capability-card h3 { font-weight: 400; font-size: 17px; }
+.hero-badge, .eyebrow, .section-kicker, .hero-edition { letter-spacing: .065em; font-weight: 400; }
+
+/* Surface-wide holography. No standalone pearl ball. */
+.hero {
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  min-height: 580px;
+  padding: 100px clamp(20px,4.5vw,65px) 94px;
+  border-bottom: 1px solid var(--holo-border);
+}
+.hero-copy-column { width: min(100%, 910px); z-index: 4; }
+.hero-material {
+  position: absolute;
+  inset: -8% -8% -8% 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+.hero-material::before {
+  content:"";
+  position:absolute; inset: -40% -60%;
+  background:
+    radial-gradient(ellipse at 74% 41%, var(--holo-diffuse), transparent 39%),
+    conic-gradient(from 145deg at 78% 57%, transparent 0deg,
+      rgba(201,190,252,.10) 36deg,
+      rgba(148,218,233,.10) 48deg,
+      rgba(241,180,220,.12) 58deg,
+      transparent 70deg,
+      rgba(167,151,243,.08) 175deg,
+      transparent 213deg);
+  transform: rotate(-9deg);
+  filter: blur(24px);
+  opacity: .85;
+  animation: holo-field-drift 21s ease-in-out infinite alternate;
+}
+html[data-theme="light"] .hero-material::before {
+  background:
+    radial-gradient(ellipse at 71% 44%, rgba(207,178,243,.22), transparent 45%),
+    conic-gradient(from 155deg at 77% 55%, transparent 0deg,
+      rgba(204,236,244,.22) 35deg,
+      rgba(249,192,232,.24) 48deg,
+      rgba(206,187,249,.26) 58deg,
+      transparent 71deg,
+      rgba(166,216,221,.18) 175deg,
+      transparent 213deg);
+  opacity: 1;
+}
+.material-wave {
+  position: absolute;
+  left: 26%;
+  width: 92%;
+  height: 57%;
+  border-top: 1px solid var(--holo-border);
+  border-bottom: 1px solid rgba(192,184,242,.07);
+  border-radius: 47% 58% 44% 53%;
+  transform: rotate(-22deg);
+  opacity: .54;
+  box-shadow: 0 -24px 95px var(--holo-diffuse), inset 0 32px 75px var(--holo-diffuse);
+}
+.material-wave-one { top: -19%; animation: material-drift-one 22s ease-in-out infinite alternate; }
+.material-wave-two { top: 16%; left: 35%; transform: rotate(-18deg); opacity: .35; animation: material-drift-two 26s ease-in-out infinite alternate; }
+.material-wave-three { top: 46%; left: 45%; transform: rotate(-14deg); opacity: .26; animation: material-drift-one 30s ease-in-out infinite alternate-reverse; }
+.hero-art-caption {
+  position: absolute; bottom: 35px; left: 65%; right: 4%;
+  display: flex; align-items: center; gap: 12px;
+  color: var(--muted); font-size: 10px; white-space: nowrap;
+}
+@keyframes holo-field-drift {
+  0% { transform: translate3d(-2%,1%,0) rotate(-9deg) scale(1); }
+  100% { transform: translate3d(4%,-3%,0) rotate(-3deg) scale(1.07); }
+}
+@keyframes material-drift-one { 0% { translate: -1% 0; } 100% { translate: 3% -5%; } }
+@keyframes material-drift-two { 0% { translate: 0 2%; } 100% { translate: -2% -3%; } }
+
+/* Mother-of-pearl / obsidian interference lives across the entire viewport. */
+body::after {
+  content:""; position: fixed; inset: -20%;
+  pointer-events: none; z-index: 0; opacity: .41;
+  background:
+    linear-gradient(112deg, transparent 10%, rgba(155,127,229,.10) 34%,
+      rgba(111,207,220,.10) 45%, rgba(240,176,212,.09) 56%, transparent 72%),
+    radial-gradient(ellipse 55% 31% at 87% 10%, var(--pearl-halo),transparent 100%);
+  background-size: 170% 160%;
+  animation: nacre-wave-pass 25s ease-in-out infinite alternate;
+}
+html[data-theme="light"] body::after {
+  opacity: .73;
+  background:
+    linear-gradient(112deg, transparent 4%, rgba(190,163,230,.19) 32%,
+      rgba(170,232,226,.18) 47%, rgba(240,190,220,.21) 59%, transparent 86%),
+    radial-gradient(ellipse 55% 31% at 87% 10%, rgba(215,185,247,.19),transparent 100%);
+  background-size: 170% 160%;
+}
+@keyframes nacre-wave-pass {
+  from { background-position: 12% 20%; }
+  to { background-position: 90% 82%; }
+}
+.capability-card, .console-shell, .lifecycle-shell, .flow-node {
+  backdrop-filter: blur(10px) saturate(125%);
+}
+.capability-card::after {
+  opacity: .36;
+  background:linear-gradient(130deg,rgba(178,217,239,.09), transparent 38%,
+      rgba(201,152,239,.08) 62%,rgba(233,176,220,.09) 100%);
+  background-size: 210% 210%;
+  animation: nacre-wave-pass 29s ease-in-out infinite alternate;
+}
+html[data-theme="light"] .capability-card::after { opacity: .52; }
+@media (max-width:900px) {
+  .hero { min-height: 545px; padding: 72px 20px 68px; }
+  .hero h1 { font-size: clamp(44px, 7.2vw, 72px); }
+  .hero-art-caption { left: 42%; }
+}
+@media (max-width:680px) {
+  .brand-wordmark { font-size: 13px; }
+  .hero { min-height: 530px; padding: 67px 14px 65px; }
+  .hero h1 { font-size: clamp(39px, 9.6vw, 57px); letter-spacing: -.038em; }
+  .hero-copy { font-size: 13px; max-width: 370px; }
+  .hero-art-caption { left: 14px; right: 14px; bottom: 16px; white-space: normal; }
+  .hero-art-caption > span:last-child { max-width: 128px; }
+  .material-wave { left: 5%; width: 147%; opacity: .3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-material::before, .material-wave, body::after, .capability-card::after {
+    animation: none !important;
+  }
+}

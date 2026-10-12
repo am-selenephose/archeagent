@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Instrument_Serif, Manrope } from "next/font/google";
+import { Geist_Mono, Jost } from "next/font/google";
 import "./globals.css";
 import "./pearl-theme.css";
 
-const manrope = Manrope({ variable: "--font-atelier", subsets: ["latin"], display: "swap" });
-const instrument = Instrument_Serif({ variable: "--font-editorial", subsets: ["latin"], weight: "400", style: ["normal", "italic"], display: "swap" });
+const jost = Jost({ variable: "--font-atelier", subsets: ["latin"], weight: ["300", "400", "500"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -19,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: 'try { document.documentElement.dataset.theme = localStorage.getItem("archeagent-appearance") === "light" ? "light" : "dark"; } catch (_) { document.documentElement.dataset.theme = "dark"; }' }} />
       </head>
-      <body className={`${manrope.variable} ${instrument.variable} ${geistMono.variable}`}>{children}</body>
+      <body className={`${jost.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
 }

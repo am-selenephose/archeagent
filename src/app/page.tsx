@@ -49,7 +49,7 @@ export default function Home() {
       <nav className="nav-shell" aria-label="Primary">
         <a className="brand" href="#" aria-label="Archeagent home">
           <span className="brand-mark" aria-hidden="true"><span>A</span></span>
-          <span className="brand-wordmark">archeagent<span className="wordmark-dot">.</span></span>
+          <span className="brand-wordmark">ARCHEAGENT<span className="wordmark-dot">.</span></span>
         </a>
         <div className="nav-links">
           <a href="#console">The console</a>
@@ -63,7 +63,7 @@ export default function Home() {
         <div className="hero-copy-column">
           <div className="hero-badge"><span className="badge-sparkle" aria-hidden="true">✦</span> THE ART OF VERIFIED INTELLIGENCE</div>
           <p className="hero-edition">AGENT ENGINEERING / ISSUE 001</p>
-          <h1>Intelligence,<br /><em>with integrity.</em></h1>
+          <h1>INTELLIGENCE,<br /><em>WITH INTEGRITY.</em></h1>
           <p className="hero-copy">
             Beautifully orchestrated work deserves evidence as rigorous as the
             intelligence behind it. Archeagent measures agents, verifies outcomes,
@@ -79,14 +79,10 @@ export default function Home() {
             <span><Activity size={15} /> Model-checked policy</span>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <span className="orb-horizon" />
-          <span className="orb-halo orb-halo-one" />
-          <span className="orb-halo orb-halo-two" />
-          <div className="pearl-object">
-            <span className="pearl-specular" />
-            <span className="pearl-core-letter">A</span>
-          </div>
+        <div className="hero-material" aria-hidden="true">
+          <span className="material-wave material-wave-one" />
+          <span className="material-wave material-wave-two" />
+          <span className="material-wave material-wave-three" />
           <div className="hero-art-caption">
             <span className="hero-art-index">01 / ARCHITECTURE OF TRUST</span>
             <span className="hero-art-rule" />
@@ -98,7 +94,7 @@ export default function Home() {
       <section className="capability-section" aria-labelledby="capabilities-heading">
         <div className="section-intro">
           <span className="section-kicker">THE ARCHITECTURE</span>
-          <h2 id="capabilities-heading">Confidence, <em>earned.</em></h2>
+          <h2 id="capabilities-heading">CONFIDENCE, <em>EARNED.</em></h2>
           <p>Four disciplines. One continuous proof chain.</p>
         </div>
         <div className="capability-grid">
@@ -157,7 +153,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <div className="brand footer-brand"><span className="brand-mark"><span>A</span></span><span className="brand-wordmark">archeagent<span className="wordmark-dot">.</span></span></div>
+        <div className="brand footer-brand"><span className="brand-mark"><span>A</span></span><span className="brand-wordmark">ARCHEAGENT<span className="wordmark-dot">.</span></span></div>
         <p>Evidence first software delivery for AI-native engineering teams.</p>
       </footer>
     </main>
