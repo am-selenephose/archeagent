@@ -8,9 +8,9 @@ import {
   Layers3,
   Radar,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { LifecycleConsole } from "@/components/lifecycle-console";
+import { ThemeSwitch } from "@/components/theme-switch";
 import formalReceipt from "../../formal/receipts/release-authority-summary.json";
 import { assertFormalReceiptFresh } from "@/core/formal-receipt";
 
@@ -46,52 +46,69 @@ const capabilities = [
 export default function Home() {
   return (
     <main>
-      <nav className="nav-shell">
-        <a className="brand" href="#">
-          <span className="brand-mark">AR</span>
-          <span>Archeagent</span>
+      <nav className="nav-shell" aria-label="Primary">
+        <a className="brand" href="#" aria-label="Archeagent home">
+          <span className="brand-mark" aria-hidden="true"><span>A</span></span>
+          <span className="brand-wordmark">ARCHEAGENT<span className="wordmark-dot">.</span></span>
         </a>
         <div className="nav-links">
-          <a href="#console">Demo</a>
+          <a href="#console">The console</a>
           <a href="#architecture">Architecture</a>
-          <a className="nav-cta" href="#console">Run proof <ArrowRight size={15} /></a>
+          <a className="nav-cta" href="#console">Explore proof <ArrowRight size={15} /></a>
+          <ThemeSwitch />
         </div>
       </nav>
 
       <section className="hero">
-        <div className="hero-badge"><Sparkles size={15} />Outcome-grounded agent engineering</div>
-
-        <h1>
-          Do not trust the model.
-          <span>Trust the measured worker, the evidence, and the exact release state.</span>
-        </h1>
-
-        <p className="hero-copy">
-          Archeagent learns which coding agents and reviewer pairs are reliable for
-          each class of work, limits what authority they earn, and issues release
-          permission only for an exact independently verified state.
-        </p>
-
-        <div className="hero-actions">
-          <a className="primary-action" href="#console">Try the live evaluation <ArrowRight size={17} /></a>
-          <a className="secondary-action" href="#architecture">See architecture</a>
+        <div className="hero-copy-column">
+          <div className="hero-badge"><span className="badge-sparkle" aria-hidden="true">✦</span> THE ART OF VERIFIED INTELLIGENCE</div>
+          <p className="hero-edition">AGENT ENGINEERING / ISSUE 001</p>
+          <h1>INTELLIGENCE,<br /><em>WITH INTEGRITY.</em></h1>
+          <p className="hero-copy">
+            Beautifully orchestrated work deserves evidence as rigorous as the
+            intelligence behind it. Archeagent measures agents, verifies outcomes,
+            and keeps release authority tied to exact, proven states.
+          </p>
+          <div className="hero-actions">
+            <a className="primary-action" href="#console">Explore the evaluation <ArrowRight size={17} /></a>
+            <a className="secondary-action" href="#architecture">Our architecture <ArrowRight size={15} /></a>
+          </div>
+          <div className="trust-row">
+            <span><BadgeCheck size={15} /> Evidence before assertion</span>
+            <span><Braces size={15} /> TypeScript + Go</span>
+            <span><Activity size={15} /> Model-checked policy</span>
+          </div>
         </div>
-
-        <div className="trust-row">
-          <span><BadgeCheck size={15} /> contextual trust</span>
-          <span><Braces size={15} /> TypeScript + Go</span>
-          <span><Activity size={15} /> TLA+ model checked</span>
+        <div className="hero-material" aria-hidden="true">
+          <span className="material-wave material-wave-one" />
+          <span className="material-wave material-wave-two" />
+          <span className="material-wave material-wave-three" />
+          <div className="hero-art-caption">
+            <span className="hero-art-index">01 / ARCHITECTURE OF TRUST</span>
+            <span className="hero-art-rule" />
+            <span>Nothing accepted without evidence.</span>
+          </div>
         </div>
       </section>
 
-      <section className="capability-grid">
-        {capabilities.map(({ icon: Icon, title, text }) => (
-          <article className="capability-card" key={title}>
-            <div className="capability-icon"><Icon size={19} /></div>
-            <h2>{title}</h2>
-            <p>{text}</p>
-          </article>
-        ))}
+      <section className="capability-section" aria-labelledby="capabilities-heading">
+        <div className="section-intro">
+          <span className="section-kicker">THE ARCHITECTURE</span>
+          <h2 id="capabilities-heading">CONFIDENCE, <em>EARNED.</em></h2>
+          <p>Four disciplines. One continuous proof chain.</p>
+        </div>
+        <div className="capability-grid">
+          {capabilities.map(({ icon: Icon, title, text }, index) => (
+            <article className="capability-card" key={title}>
+              <div className="capability-card-top">
+                <div className="capability-icon"><Icon size={19} /></div>
+                <span className="capability-number">0{index + 1} / 04</span>
+              </div>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <LifecycleConsole />
@@ -136,7 +153,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <div className="brand footer-brand"><span className="brand-mark">AR</span><span>Archeagent</span></div>
+        <div className="brand footer-brand"><span className="brand-mark"><span>A</span></span><span className="brand-wordmark">ARCHEAGENT<span className="wordmark-dot">.</span></span></div>
         <p>Evidence first software delivery for AI-native engineering teams.</p>
       </footer>
     </main>

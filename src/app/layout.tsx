@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Jost } from "next/font/google";
 import "./globals.css";
+import "./pearl-theme.css";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const jost = Jost({ variable: "--font-atelier", subsets: ["latin"], weight: ["300", "400", "500"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -13,8 +14,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geist.variable} ${geistMono.variable}`}>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: 'try { document.documentElement.dataset.theme = localStorage.getItem("archeagent-appearance") === "light" ? "light" : "dark"; } catch (_) { document.documentElement.dataset.theme = "dark"; }' }} />
+      </head>
+      <body className={`${jost.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
 }
