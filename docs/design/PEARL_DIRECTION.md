@@ -1,43 +1,42 @@
-# Archeagent / Holographic Obsidian and Mother of Pearl
+# Archeagent: holographic obsidian / mother of pearl
 
-This document shows real browser captures of the current Next.js UI branch,
-not generated static mockups.
+These previews were captured by Chromium from the actual working Next.js app
+with the original Archeagent Line display typeface loaded. They are not
+static UI mockups.
 
-## Dark theme: holographic obsidian
+## Obsidian dark
 
 ![Obsidian desktop](previews/obsidian-desktop.webp)
 
-Full UI surface uses graphite/obsidian, oil-slick lilac, cyan and rose
-reflections, subtle slow waves and delicate glass borders.
+## Mother-of-pearl light
 
-## Light theme: mother-of-pearl
+![Mother-of-pearl desktop](previews/pearl-desktop.webp)
 
-![Light pearl desktop](previews/pearl-desktop.webp)
-
-Full UI surface is pearlescent ivory with nacre interference waves, muted
-lavender/rose/cyan and etched pane-like cards.
-
-## Mobile browser captures
+## Mobile captures
 
 | Dark | Light |
 | --- | --- |
 | ![Obsidian mobile](previews/obsidian-mobile.webp) | ![Pearl mobile](previews/pearl-mobile.webp) |
 
-## Font approval and licensing
+## Typography
 
-The owner chose AXUNO by VPcreativeshop / Only Fonts for big display headings
-and brand typography. The commercial Webfont file is not yet supplied;
-screenshots use Jost 300 as a clearly identified fallback, NOT Axuno.
-Body copy uses Jost 400. Technical statuses use Geist Mono.
-See AXUNO_FONT.md for license and activation details.
+Axuno is the reference display font chosen by the owner. No original licensed
+Axuno Webfont binary has been supplied. We built an independent monoline
+geometric display face, Archeagent Line, from original vector skeletons in
+scripts/build-display-font.py, with a distinct split-bar A.
 
-## Functional QA
+Archeagent Line is now loaded as a real self-hosted font in live CSS, not a
+Jost display fallback, when Axuno is unavailable. Jost remains body/UI copy;
+Geist Mono serves technical receipts.
 
-- Actual Next.js production build and ESLint pass.
-- 10 focused Vitest tests pass.
-- Browser checks: 1440px desktop and 390px mobile.
-- Theme toggle persists across reloads.
-- No horizontal overflow or page JavaScript errors.
-- The previous decorative pearl sphere was removed entirely.
-- Existing eval console, API routes and Concord gate remain functional.
-- Respect reduced motion. Demo evaluation fixtures are not live model sessions.
+## Browser verification
+
+- Desktop 1440 px and mobile 390 px screenshots captured from the app.
+- Real self-hosted custom font loaded and computed for the display stack.
+- Dark/light switch persists across reload.
+- No horizontal overflow, no page JavaScript exceptions.
+- Evaluator interaction produces twelve lifecycle stages.
+- No standalone pearl object; holographic material occupies the whole UI.
+- Layout and console remain real React/Next.js, not rendered artwork.
+
+The implementation is in a review branch, not merged into main.

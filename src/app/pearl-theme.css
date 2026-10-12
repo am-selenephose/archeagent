@@ -564,7 +564,16 @@ html[data-theme="light"] .gate-icon { color:#70619a; }
   font-weight: 400;
   font-display: swap;
 }
-:root { --font-display-axuno: "Axuno", var(--font-atelier), "Jost", sans-serif; }
+@font-face {
+  font-family: "Archeagent Line";
+  src: url("/fonts/archeagent-line.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --font-display-axuno: "Axuno", "Archeagent Line", "Jost", sans-serif;
+}
 body {
   font-family: var(--font-atelier), "Jost", sans-serif;
   font-weight: 400;
