@@ -762,3 +762,55 @@ html[data-theme="light"] .capability-card::after { opacity: .52; }
     animation: none !important;
   }
 }
+
+
+/* ==========================================================================
+   EXACT AXUNO / PRIVATE LOCAL TYPEFACE PREVIEW
+   Source asset: downloaded original AxunoDemo-Regular.otf, personal-use only.
+   Never publish the demo binary; the actual production asset requires a
+   commercial webfont license. This declaration stays in the local worktree
+   until a licensed Webfont version can be legally included in the product.
+   The demo contains Latin letters but no digits or punctuation. Unsupported
+   glyphs necessarily fall back to Jost.
+   ========================================================================== */
+@font-face {
+  font-family: "Axuno Exact Local Preview";
+  src: url("/fonts/axuno-original-demo.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+html,
+body,
+body *,
+body *::before,
+body *::after {
+  font-family: "Axuno Exact Local Preview", "Jost", sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-synthesis: none !important;
+  letter-spacing: -0.018em !important;
+}
+
+/* The source is a thin display face. Keep controls legible and clickable. */
+.hero h1 {
+  font-size: clamp(40px, 5.7vw, 83px);
+  line-height: 1.21;
+  letter-spacing: -0.025em !important;
+}
+.brand-wordmark { font-size: 17px; }
+.hero-copy { font-size: clamp(15px, 1.45vw, 18px); line-height: 1.85; }
+.capability-card h3 { font-size: 20px; }
+.capability-card p { font-size: 15px; line-height: 1.8; }
+.nav-links { font-size: 14px; }
+.hero-badge, .eyebrow, .section-kicker { font-size: 12px; }
+.nav-cta, .theme-switch, .primary-action, .secondary-action,
+.run-button { font-size: 14px; }
+.lifecycle-stage > p { font-size: 14px; }
+@media (max-width: 680px) {
+  .hero h1 { font-size: clamp(36px, 9.3vw, 58px); }
+  .hero-copy { font-size: 15px; }
+  .nav-links { font-size: 12px; }
+  .capability-card h3 { font-size: 18px; }
+}
