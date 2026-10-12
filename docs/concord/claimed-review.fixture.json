@@ -1,0 +1,16 @@
+{
+  "taskId": "PUBLIC-FIXTURE-42",
+  "workState": {
+    "generated_at": "2026-10-12T09:00:00.002Z",
+    "tasks": [{
+      "task_id": "PUBLIC-FIXTURE-42",
+      "title": "Synthetic admission example, not a model session",
+      "status": "review_ready",
+      "agent_id": "script:public-fixture",
+      "version": 2,
+      "expected_files": ["src/lib/example.ts"]
+    }]
+  },
+  "reviewPacket": "# Review Packet: PUBLIC-FIXTURE-42 - Synthetic example\n## Files touched\n- src/lib/example.ts\n## Tests run\n- fixture-test --claimed-pass\n## Guardrails checked\n- Fixture contains no credentials\n## Provenance\n- example: deliberately invented public fixture\n",
+  "eventsJsonl": "{\"task_id\":\"PUBLIC-FIXTURE-42\",\"tool\":\"handoff\",\"status\":\"success\",\"detail\":\"review_ready\",\"created_at\":\"2026-10-12T09:00:00.000Z\"}\n{\"task_id\":\"PUBLIC-FIXTURE-42\",\"tool\":\"review_ready\",\"status\":\"success\",\"detail\":\"0 open question(s)\",\"created_at\":\"2026-10-12T09:00:00.001Z\"}\n"
+}

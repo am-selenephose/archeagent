@@ -54,7 +54,7 @@ export default function Home() {
         <div className="nav-links">
           <a href="#console">Demo</a>
           <a href="#architecture">Architecture</a>
-          <a className="nav-cta" href="#console">Run proof <ArrowRight size={15} /></a>
+          <a className="nav-cta" href="#console">View fixture demo <ArrowRight size={15} /></a>
         </div>
       </nav>
 
@@ -73,7 +73,7 @@ export default function Home() {
         </p>
 
         <div className="hero-actions">
-          <a className="primary-action" href="#console">Try the live evaluation <ArrowRight size={17} /></a>
+          <a className="primary-action" href="#console">Try the fixture demo <ArrowRight size={17} /></a>
           <a className="secondary-action" href="#architecture">See architecture</a>
         </div>
 

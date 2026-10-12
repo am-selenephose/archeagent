@@ -3,6 +3,7 @@ package sandbox
 import (
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -39,8 +40,8 @@ func (s Spec) Validate() error {
 	if s.CPUs <= 0 || s.CPUs > 16 {
 		return errors.New("cpu limit out of range")
 	}
-	if s.WorkDir == "" || !strings.HasPrefix(s.WorkDir, "/workspace") {
-		return errors.New("work_dir must remain under /workspace")
+	if path.Clean(s.WorkDir) != s.WorkDir || (s.WorkDir != "/workspace" && !strings.HasPrefix(s.WorkDir, "/workspace/")) {
+		return errors.New("work_dir must be a canonical path under /workspace")
 	}
 	for key := range s.Environment {
 		if !envKeyPattern.MatchString(key) {

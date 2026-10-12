@@ -62,3 +62,43 @@ func TestRejectsInvalidImage(t *testing.T) {
 		t.Fatal("expected invalid image to be rejected")
 	}
 }
+
+func TestRejectsWorkDirsOutsideCanonicalWorkspace(t *testing.T) {
+	for _, workDir := range []string{
+		"",
+		"workspace/repo",
+		"/workspaceevil",
+		"/workspace/../etc",
+		"/workspace/repo/../../etc",
+		"/workspace/./repo",
+		"/workspace/repo/../other",
+		"/workspace//repo",
+	} {
+		t.Run(workDir, func(t *testing.T) {
+			spec := baseSpec()
+			spec.WorkDir = workDir
+			if _, err := Args(spec); err == nil {
+				t.Fatalf("expected noncanonical or outside work_dir %q to be rejected", workDir)
+			}
+		})
+	}
+}
+
+func TestAcceptsCanonicalWorkspaceAndDescendants(t *testing.T) {
+	for _, workDir := range []string{"/workspace", "/workspace/repo", "/workspace/repo/nested"} {
+		t.Run(workDir, func(t *testing.T) {
+			spec := baseSpec()
+			spec.WorkDir = workDir
+			args, err := Args(spec)
+			if err != nil {
+				t.Fatalf("expected canonical work_dir %q to be accepted: %v", workDir, err)
+			}
+			for _, arg := range args {
+				if arg == "--workdir="+workDir {
+					return
+				}
+			}
+			t.Fatalf("Docker argv omitted accepted work_dir %q", workDir)
+		})
+	}
+}

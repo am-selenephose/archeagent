@@ -18,77 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import type { EvaluationRun } from "@/lib/evaluator";
-
-type IntelligenceDemo = {
-  context: {
-    repository: string;
-    language: string;
-    framework: string;
-    taskClass: string;
-    risk: string;
-  };
-  routing: {
-    agent: { id: string; name: string; model: string } | null;
-    candidates: Array<{
-      agentId: string;
-      successProbability: number;
-      conservativeSuccessProbability: number;
-      expectedUtility: number;
-      costUsd: number;
-      latencyMs: number;
-    }>;
-  };
-  tournament: {
-    primary: string;
-    shadows: string[];
-    reason: string;
-  };
-  reviewerPairing: {
-    reviewerId: string;
-    source: string;
-    catchProbability: number;
-    conservativeCatchProbability: number;
-    complementarityScore: number;
-  } | null;
-  reviewerCandidates: Array<{
-    reviewerId: string;
-    catchProbability: number;
-    complementarityScore: number;
-  }>;
-  authority: {
-    level: string;
-    reasons: string[];
-    autoMergeAllowed: false;
-  } | null;
-  verification: {
-    levels: string[];
-    humanReviewRequired: boolean;
-    maxReviewerMinutes: number;
-    rationale: string[];
-  };
-  release: {
-    claims: {
-      baseSha: string;
-      patchSha: string;
-      policyHash: string;
-      environment: string;
-      leaseId: string;
-    };
-    validExactState: { valid: boolean; reasons: string[] };
-    invalidAfterHeadMove: { valid: boolean; reasons: string[] };
-  };
-  productionAttribution: {
-    confidence: number;
-    supportingSignals: string[];
-    contradictingSignals: string[];
-  };
-  productionOutcome: {
-    outcome: string;
-    weight: number;
-    reason: string;
-  } | null;
-};
+import { runLifecycleDemo, selectLifecycleWinner, type LifecycleState } from "../lib/lifecycle-demo";
 
 function pct(value: number) {
   return (value * 100).toFixed(1) + "%";
@@ -100,34 +30,15 @@ function money(value: number) {
 }
 
 export function LifecycleConsole() {
-  const [intelligence, setIntelligence] = useState<IntelligenceDemo | null>(null);
-  const [evaluation, setEvaluation] = useState<EvaluationRun | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [{ intelligence, evaluation, loading, error }, setState] = useState<LifecycleState>({
+    intelligence: null, evaluation: null, loading: false, error: null,
+  });
 
   async function run() {
-    setLoading(true);
-    setIntelligence(null);
-    setEvaluation(null);
-
-    const [intelResponse, evaluationResponse] = await Promise.all([
-      fetch("/api/intelligence/demo", { cache: "no-store" }),
-      fetch("/api/demo", { cache: "no-store" }),
-    ]);
-
-    const [intel, evaluated] = await Promise.all([
-      intelResponse.json() as Promise<IntelligenceDemo>,
-      evaluationResponse.json() as Promise<EvaluationRun>,
-    ]);
-
-    setIntelligence(intel);
-    setEvaluation(evaluated);
-    setLoading(false);
+    await runLifecycleDemo(setState);
   }
 
-  const winner =
-    evaluation?.evaluations.find((item) => item.candidate.id === evaluation.winnerId) ??
-    evaluation?.evaluations[0] ??
-    null;
+  const winner = selectLifecycleWinner(evaluation);
 
   const routeWinner = intelligence?.routing.candidates[0] ?? null;
 
@@ -189,11 +100,11 @@ export function LifecycleConsole() {
     {
       id: "06",
       icon: TestTube2,
-      label: "Independent execution",
-      title: evaluation.evaluations.length + " candidate patches evaluated",
+      label: "Fixture evaluation",
+      title: evaluation.evaluations.length + " example patches scored",
       detail: winner
-        ? winner.candidate.agent + " produced the strongest independently verified state."
-        : "No candidate survived evaluation.",
+        ? winner.candidate.agent + " has the highest score from the supplied fixture signals."
+        : "No fixture candidate passed the example policy.",
       state: winner ? "pass" : "fail",
     },
     {
@@ -205,7 +116,7 @@ export function LifecycleConsole() {
         ? winner.gates.filter((gate) => gate.status === "pass").length +
           "/" +
           winner.gates.length +
-          " release gates passed"
+          " fixture gates passed"
         : evaluation.policy.principle,
       state: winner ? "pass" : "fail",
     },
@@ -224,10 +135,10 @@ export function LifecycleConsole() {
     {
       id: "09",
       icon: Fingerprint,
-      label: "Signed release lease",
+      label: "Fixture release lease",
       title: intelligence.release.validExactState.valid
-        ? "Exact state authorized"
-        : "Lease rejected",
+        ? "Example lease validated"
+        : "Example lease rejected",
       detail:
         intelligence.release.claims.baseSha +
         " → " +
@@ -237,16 +148,16 @@ export function LifecycleConsole() {
     {
       id: "10",
       icon: GitCommitHorizontal,
-      label: "Deployment",
+      label: "Deployment example",
       title: intelligence.release.claims.environment,
       detail:
-        "Authority is bound to exact base, patch, policy, evidence root, environment and lease identity.",
+        "Illustrates an environment-bound lease; this demo does not deploy code.",
       state: "observed",
     },
     {
       id: "11",
       icon: Radar,
-      label: "Production attribution",
+      label: "Fixture attribution",
       title: pct(intelligence.productionAttribution.confidence) + " evidence-derived confidence",
       detail:
         intelligence.productionAttribution.supportingSignals.slice(0, 2).join(" · ") ||
@@ -257,7 +168,7 @@ export function LifecycleConsole() {
     {
       id: "12",
       icon: Activity,
-      label: "Trust graph update",
+      label: "Fixture trust update",
       title: intelligence.productionOutcome?.outcome ?? "No trust mutation",
       detail:
         intelligence.productionOutcome?.reason ??
@@ -267,30 +178,42 @@ export function LifecycleConsole() {
   ] : [];
 
   return (
-    <section className="lifecycle-shell" id="console">
+    <section className="lifecycle-shell" id="console" aria-busy={loading}>
       <div className="lifecycle-header">
         <div>
-          <p className="eyebrow">End-to-end engineering labor loop</p>
+          <p className="eyebrow">Fixture demo · engineering labor loop</p>
           <h2>One mission. One evidence chain. One learned workforce.</h2>
           <p>
-            Archeagent now tells one continuous story from team formation through
-            production survival and the next trust update.
+            Deterministic example data illustrates team formation, verification,
+            release fencing and production attribution.
           </p>
         </div>
-        <button className="run-button" onClick={run} disabled={loading}>
+        <button type="button" className="run-button" onClick={run} disabled={loading} aria-busy={loading}>
           {loading ? <Loader2 className="spin" size={17} /> : <Play size={17} />}
-          {loading ? "Running lifecycle" : intelligence ? "Run again" : "Run full lifecycle"}
+          {loading ? "Loading fixture demo" : error ? "Retry fixture demo" : intelligence ? "Run fixture again" : "Run fixture demo"}
         </button>
       </div>
+
+      <p className="lifecycle-disclosure">
+        No live Concord session, model or provider execution, deployment, or release authorization
+        occurs here. All stage results are fixture-driven examples.
+      </p>
+
+      {error && (
+        <div className="lifecycle-error" role="alert">
+          <strong>Fixture demo unavailable</strong>
+          <p>{error}</p>
+        </div>
+      )}
 
       {!intelligence || !evaluation ? (
         <div className="lifecycle-idle">
           <div className="lifecycle-orbit"><Radar size={26} /></div>
           <div>
-            <strong>From mission assignment to production outcome.</strong>
+            <strong>{loading ? "Loading example lifecycle data…" : "Explore the fixture from mission to outcome."}</strong>
             <p>
-              The run exposes routing probability, reviewer complementarity,
-              independent gates, release fencing and production attribution in one chain.
+              Example signals show routing probability, reviewer complementarity,
+              policy gates, release fencing and production attribution in one chain.
             </p>
           </div>
         </div>
@@ -324,7 +247,7 @@ export function LifecycleConsole() {
 
           <div className="lifecycle-proof-strip">
             <div>
-              <small>RELEASE DECISION</small>
+              <small>FIXTURE POLICY RESULT</small>
               <strong>{evaluation.decision}</strong>
             </div>
             <div>

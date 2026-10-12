@@ -549,6 +549,35 @@ body::before {
   line-height: 1.65;
 }
 
+.lifecycle-disclosure {
+  color: var(--parchment);
+  font-size: .85rem;
+  line-height: 1.65;
+  margin: 0 0 20px;
+}
+
+.lifecycle-error {
+  border: 1px solid var(--vermilion);
+  border-radius: 17px;
+  padding: 16px;
+  margin-bottom: 16px;
+  color: var(--parchment);
+}
+
+.lifecycle-error p {
+  margin-bottom: 0;
+  line-height: 1.55;
+}
+
+.lifecycle-shell .run-button:focus-visible {
+  outline: 2px solid var(--acid);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lifecycle-shell .spin { animation: none; }
+}
+
 .lifecycle-idle {
   min-height: 230px;
   display: flex;

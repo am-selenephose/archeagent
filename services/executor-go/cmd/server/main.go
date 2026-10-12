@@ -29,7 +29,7 @@ func (s server) execute(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256*1024))
 	decoder.DisallowUnknownFields()
 
-	var spec sandbox.Spec
+	spec := sandbox.Spec{ReadOnlyRootFS: true}
 	if err := decoder.Decode(&spec); err != nil {
 		http.Error(w, "invalid execution spec", http.StatusBadRequest)
 		return
