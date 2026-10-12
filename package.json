@@ -17,7 +17,8 @@
     "benchmark:provider:import:swerebench": "node benchmarks/provider/import-swerebench.mjs",
     "benchmark:swerebench:import": "node benchmarks/provider/import-swerebench.mjs",
     "benchmark:provider:import:r2e": "node benchmarks/provider/import-r2e-gym.mjs",
-    "benchmark:r2e:import": "node benchmarks/provider/import-r2e-gym.mjs"
+    "benchmark:r2e:import": "node benchmarks/provider/import-r2e-gym.mjs",
+    "concord:gate": "tsx scripts/concord-review-gate.ts"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
@@ -39,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.2"
   },
