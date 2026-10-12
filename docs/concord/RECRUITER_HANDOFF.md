@@ -63,7 +63,7 @@ Final local rerun completed at **2026-10-12T10:54:28Z**, after the last code cha
 | `pnpm audit --prod --json` | Exit 0; zero production advisories |
 | `pnpm audit --json` | **Exit 1**; one high development-only braces 3.0.3 advisory, no published patched version |
 | `pnpm peers check` | Exit 0 |
-| `git diff --check` and local documentation validation | Exit 0; 5 Markdown files, 16 local links, fixture JSON valid, email body 140 words |
+| `git diff --check` and local documentation validation | Exit 0; 5 Markdown files, 16 local links, fixture JSON valid, email body 149 words |
 
 Focused subsets: core 117, API 14, CLI 4, frontend 19. Go tests stop at real
 decoding/validation/argv construction with a fake external runner, not Docker
@@ -129,9 +129,19 @@ Screenshots are real browser captures; no video was recorded.
 
 ## CI and publication
 
-Pending publication of the verified follow-up. Existing green runs apply only
-to c58e23f, not these repairs. This section will record the new head's actual
-GitHub CI outcome before the final handoff. No email, merge or public deployment.
+Implementation commit: `a6b95da523d33d0fff01934fa84d50fd545d6191`, local only.
+Push to the existing feature branch failed with HTTP 403: GitHub denied the
+configured `am-selenephos` account permission to `am-selenephose/archeagent`.
+PR #1 update was also denied by UpdatePullRequest permissions. Publication
+attempts stopped; no credentials were extracted or alternate identity attempted.
+
+There is **no new-head GitHub CI run**. Existing successful runs
+[38223247398](https://github.com/am-selenephose/archeagent/actions/runs/38223247398)
+and [38223254175](https://github.com/am-selenephose/archeagent/actions/runs/38223254175)
+apply only to c58e23f, not these repairs. A fresh clone of the remote feature
+branch still lacks this local follow-up and its new handoff artifacts.
+Configured write access to that exact repository is needed to push, update
+PR #1 and verify actual remote CI. No email, merge or public deployment occurred.
 
 ## Remaining gaps
 

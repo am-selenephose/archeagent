@@ -125,6 +125,8 @@ paths and their file-addition history were empty. This is not an exhaustive
 entropy or all-history secret audit.
 
 Both repair sets were approved before implementation. Publication is confined
-to the existing feature branch and PR #1; no merge, email send or public deploy.
+to the existing feature branch and PR #1, but GitHub denied push and PR update
+to the configured account. The verified follow-up remains local, with no new
+CI outcome; no merge, email send or public deploy occurred.
 [WALKTHROUGH.md](WALKTHROUGH.md) asserts positive and negative controls using
 deliberately synthetic public input, without publishing private evidence.
