@@ -1,0 +1,221 @@
+# Durable Concord state — implemented local harness, qualification held
+
+Checkout: `/home/nur/Projects/archeagent-final-staging`.
+Branch: `integration/archeagent-final-local`.
+Baseline HEAD: `25d14a9a5c47992e7e4d4198eb97a89c536de61a`.
+All changes are local; publication remains held. **Product: FAIL/HOLD.**
+The latest [independent qualification receipt](INDEPENDENT_QUALIFICATION_RECEIPT_2026_10_13.md)
+records four further repaired findings, 554 passing full-suite tests, a completed
+scoped IPC peer review, and the current native-final-review/build-permission
+holds. [Capacity and retention](PERSISTENCE_LIMITS_AND_RETENTION_2026_10_13.md)
+documents executable finite limits and the unimplemented archive-first extension.
+The counts below describe the earlier self-review run, not the latest gate.
+This is an implemented persistence/recovery milestone, not a proposal or a
+claim that the full product, real-source launcher or Flight Recorder is ready.
+The latest adversarial continuation reproduced and repaired four defects in
+publisher exclusion, restart/close lifecycle and schema restore validation.
+Fresh gates passed: 25 focused tests, 545 full-suite tests, the original 25
+confinement checks, separate-parent recovery, TypeScript, lint, build and Go.
+See [the current review receipt](DURABLE_ADVERSARIAL_REVIEW_2026_10_13.md).
+The [earlier execution receipt](DURABLE_EXECUTION_RECEIPT_2026_10_13.md) remains
+historical evidence of its run, not coverage of those later defects.
+Local executed gates are PASS; separate-review qualification is PARTIAL and
+the overall product remains FAIL/HOLD. No real-source hold is lifted.
+
+## Operational implementation and authority separation
+
+`DurableConcordSupervisor` multiplexes operator-issued actor capabilities over
+a private framed stdio channel to one confined SQLite worker. SQLite's only
+writable filesystem remains its private staging tmpfs. No persistent host path,
+publisher descriptor, signing key or writable host mount reaches that worker.
+It composes the existing actor-bound Concord MCP adapter and unchanged schema
+and tool handlers. Each caller gets a fixed actor capability; caller JSON cannot
+select another actor, a root, SQL, a database or a snapshot pathname.
+
+The separate publisher is native, repository-owned and does not link SQLite.
+Its acquisition launcher uses Linux `openat2` from `/` with `RESOLVE_BENEATH`,
+`RESOLVE_NO_SYMLINKS` and `RESOLVE_NO_MAGICLINKS`, checks the approved directory's
+owner/mode and exact device/inode, then gives bubblewrap a descriptor via
+`--bind-fd`. It never binds a writable store by a path re-resolved after
+preflight. Its only writable host mount is that approved snapshot directory.
+The remaining filesystem is read-only; capabilities, network and further user
+namespaces remain restricted. The SQLite worker runs in a separate namespace.
+
+The native publisher holds an exclusive `flock` on the acquired directory
+inode for its lifetime, not on replaceable `owner.lock` metadata. It opens
+existing key/snapshot/lock objects non-following/non-blocking, verifies ordinary
+owned single-link files and never truncates or updates published snapshots.
+Neither the descriptor alone nor path preflight alone is the safety boundary:
+native acquisition, descriptor bind, publisher filesystem policy, anonymous
+immutable file publication and private IPC are combined requirements.
+
+This implementation is enabled only for explicitly named disposable
+`.concord/test-harness/durable-store-*` fixtures. Real-name `.concord` acquisition
+and the initializer, MCP launcher and receipt collector remain held. No new
+model session, activity projection or release-authority path is enabled.
+
+## Exact snapshot and acknowledgement semantics
+
+The worker serializes requests; only one tool invocation, audit append and
+retry-ledger update runs at a time. After a tool finishes, no open transaction
+may remain. The worker checks database integrity, foreign keys and the exact
+schema against fresh references derived from the installed Concord migrations
+and companion DDL. It serializes both current databases with SQLite's actual
+serialization API, including committed WAL-visible pages, plus the source/run
+identity. No live WAL/SHM file is copied to host storage.
+
+The bundle contains only version, strict source identity and two bounded
+base64 SQLite images. Unknown manifest fields, caller paths, invalid headers,
+unsupported schemas, wrong companion identity and real-capture provenance are
+refused. Native SQLite is opened only inside the confined worker during restore.
+Restored SQL is not treated as schema authority; additional triggers/views or
+other changed schema objects fail the reference comparison. SQLite's hard heap
+limit is 64 MiB; the supervisor's operation deadline is 15 seconds.
+
+The publisher wraps each bundle in one immutable generation:
+
+```text
+magic/version | generation | predecessor digest | payload length | payload | HMAC-SHA256
+```
+
+The authority key is generated by the publisher and stays in its private store,
+not in the worker or a caller payload. HMAC authenticates this local persistence
+authority, not a model/session, genuine agent collaboration or release authority.
+SHA-256 alone is only content/chain comparison. Storage is private plaintext,
+not encrypted at rest.
+
+Publication order is fixed:
+
+1. Create an unnamed `O_TMPFILE` inode in the approved store.
+2. Write the complete record and `fsync` that file; propagate failure.
+3. Atomically `linkat` it to its canonical next-generation name, without replacing
+   any existing entry. A late symlink/hardlink collision cannot be followed or
+   overwritten.
+4. `fsync` the store directory; propagate failure.
+5. Only then return the generation/digest acknowledgement to the supervisor.
+
+The supervisor returns `acknowledgement.durable:true` only after that response.
+It means the corresponding resulting state is persisted, **not that a domain
+operation succeeded**: an error result remains an error, and a durable response
+never grants release permission. The acknowledged digest is the actual full
+generation-record SHA-256, checked against the published file in the tests.
+
+Failure before publication is unacknowledged and fences the worker. Failure
+after atomic link but before acknowledgement is ambiguous to the caller; recovery
+may retain that committed generation. The caller retries with the same UUID and
+exact request bytes. A companion retry ledger binds UUID, actor, tool, argument
+digest and original response, preventing duplicate operation/inbox consumption.
+Changing actor or payload under the same UUID refuses and fences the worker.
+
+If the worker dies *after* a consistent bundle has been captured, the publisher
+can still durably persist that bundle. A returned acknowledgement then remains
+valid, while subsequent operations require worker recovery. Death before a
+usable capture produces no durable acknowledgement.
+
+## Recovery and limits
+
+Supervisor restarts share the operation FIFO and are barriers for subsequent
+requests. Close is terminal: it blocks new admission/restart immediately,
+drains already-admitted operations and closes resources idempotently. A closed
+object cannot be revived by restart. Schema comparisons ignore only the literal
+SQLite-reserved `sqlite_` prefix, not wildcard lookalikes such as `sqliteX_`.
+
+Recovery verifies every canonical generation in order: no missing intermediate
+entry, unknown file, link alias, incorrect length, truncated data, bad HMAC,
+wrong predecessor digest or incompatible restored state is accepted. A corrupt
+newest generation does not trigger silent fallback to an older valid one.
+The newest valid record is restored into a new private tmpfs/worker, preserving
+source/run identity, task ownership, handoffs, audit records and retry responses.
+No key/source reset or adoption of partial storage occurs during normal recovery.
+
+`minimumGeneration` is a trusted caller recovery floor. The current supervisor
+remembers its highest acknowledged generation across worker restarts, and the
+separate-parent fixture records that floor outside the snapshot store. A store
+below that floor is refused. **Coherent rollback of the entire store and its
+external floor by a privileged host adversary is not prevented.** This is not
+an external monotonic hardware/service anchor.
+
+Limits: 16 configured actors, 64 queued requests, 64 KiB tool request, 1 MiB
+tool result, 24 MiB snapshot envelope, 8 MiB per SQLite image, 10,000 retry
+records, 512 generations and 256 MiB total generation storage. Limits refuse
+without a successful durable acknowledgement. The initial version deliberately
+retains all generations; automatic compaction/retention deletion is not yet
+implemented. It is not an unlimited production-history store.
+
+The approved persistent directory is an inode-bound authority. A malicious
+host administrator/same-user process moving that inode or changing trusted
+code/keys remains outside this process confinement threat model. Path aliases
+cannot substitute a different directory at acquisition or redirect native file
+creation within the publisher. Kernel/bubblewrap and backing filesystem fsync
+semantics are trusted. Process crash tests are not hardware power-cut tests.
+
+## Executed tests versus full qualification
+
+Development checks have actually exercised committed-state restore, repeated
+worker restart, real upstream conflict/transfer/handoff records, private inbox
+filtering, retry deduplication, corrupt/truncated/gapped history, signed invalid
+schema/manifest fixtures, actor/request bounds and late alias negatives. A
+mistaken test assumption that `start_work` immediately emits ownership-transfer
+events failed; inspection and execution showed those events are created by
+actual transfers, so the test now checks the real behavior instead of inventing
+history. Native builds also rejected misleading indentation under `-Werror`
+before those formatting errors were repaired.
+
+The final finite verifier executes the **whole** focused suite, then a separate
+seed process and a fresh recovery process with no shared supervisor memory. It
+compares metadata-only audit receipts and checks the recovered owner, handoff
+and ownership history. It also reruns the original 25-check confinement probe,
+the full suite on new disposable PostgreSQL/Redis services, TypeScript, lint,
+production build, Go race/vet/module checks and tracked whitespace validation.
+It stops at the first failure and writes exact commands/exits, not optimistic
+status. No independent external review, hardware power-loss proof, browser
+acceptance or genuine two-agent session is asserted by this script.
+
+```bash
+cd /home/nur/Projects/archeagent-final-staging
+# Requires Linux openat2, bubblewrap --bind-fd, an O_TMPFILE-capable local
+# filesystem, owned Node 24, cc/OpenSSL headers and installed dependencies.
+node scripts/build-concord-persistence.mjs
+pnpm exec vitest run tests/concord-durable-state.test.ts tests/concord-durable-ipc.test.ts
+# Full finite verification: creates only new owned fixtures/services;
+# do not run bare integration tests against default PostgreSQL/Redis URLs.
+node scripts/verify-concord-durability.mjs
+```
+
+The verifier uses unused loopback ports 25469 and 26379, uniquely named/labelled
+scratch containers, and stops only its returned, label-verified container IDs.
+It does not pull images, reuse production data or stop existing application
+services. Existing ports in use cause a refusal, not a fallback. Private receipts
+are under `.local-audit/durable-verification-*/receipt.json`; logs are adjacent.
+The fixture stores and their metadata witnesses are removed after verification;
+they contain synthetic owned test data and can be recreated by the verifier.
+
+## Privacy inventory — metadata and synthetic records only
+
+| Fields | Purpose | Stores | Retention / deletion |
+| --- | --- | --- | --- |
+| Source/run UUID, schema/version | Scope recovery and reject mismatched source | Bundle identity, companion identity, private metadata receipt | All generations until explicit owned-fixture cleanup |
+| Task ID, actor ID, owner/version, expected file claims | Actual Concord coordination/overlap/ownership continuity | Concord image; native snapshot bundle | Same; fixture directory removed by verifier/tests |
+| Synthetic notes, handoff/review context, addressed message body | Exercise original workflow/privacy semantics | Concord image; actor-bound retry response when returned | Same; no real personal transcript used or printed |
+| Invocation UUID/tool/time/outcome and record references | Preserve local audit continuity without raw arguments | Companion image | Same |
+| Request UUID/actor/tool/argument digest/response | Exact retry idempotence and participant privacy | Companion retry table; every snapshot | Same; no automatic expiry that would silently permit replay |
+| Generation, predecessor digest, HMAC, lengths | Integrity, ordered recovery and acknowledgement | Native generation header/tag | Same; not authenticated agent or release evidence |
+| Local persistence key | Authenticate publisher's own immutable history | Private 0600 authority file, never worker/public output | Removed with owned store; no Git/log copy |
+| Counts/revisions/owner/generation/check exits | Independent reproduction evidence | Ignored metadata-only private receipts | Retained for local audit; no automatic publication |
+
+## Files changed in this milestone
+
+- Added native publisher and acquisition launcher in `native/`.
+- Added `src/server/concord/durable-protocol.ts`, `durable-supervisor.ts` and
+  `framed-channel.ts`; extended only the fixed program allowlist in
+  `isolated-process.ts` to launch the private worker.
+- Added `scripts/build-concord-persistence.mjs`, `concord-durable-worker.ts`,
+  `concord-durable-fixture.ts` and `verify-concord-durability.mjs`.
+- Added `tests/concord-durable-state.test.ts`, `concord-durable-ipc.test.ts`
+  and this implementation handoff.
+
+No evaluator, UI/AXUNO asset, release-control, Go implementation, dependency
+version or unrelated repository is changed by this milestone. Earlier dirty
+work is preserved. No commit/push/merge/PR/deployment/email/public font release
+is authorized or performed. Full gate results and separate-review qualification
+must be read before any real-source integration decision; holds remain intact.

@@ -1,4 +1,7 @@
 allowBuilds:
+  better-sqlite3: true
   esbuild: true
   sharp: false
   unrs-resolver: false
+overrides:
+  '@modelcontextprotocol/sdk': 1.31.0

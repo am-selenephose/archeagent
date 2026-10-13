@@ -17,30 +17,30 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { runLifecycleDemo, selectLifecycleWinner, type LifecycleState } from "../lib/lifecycle-demo";
-
-function pct(value: number) {
-  return (value * 100).toFixed(1) + "%";
-}
-
-function money(value: number) {
-  const sign = value >= 0 ? "+" : "";
-  return sign + "$" + value.toFixed(2);
-}
+import { EvaluationWorkspace } from "./evaluation-workspace";
+import { formatOperationalNumber as number } from "../lib/ui-format";
 
 export function LifecycleConsole() {
   const [{ intelligence, evaluation, loading, error }, setState] = useState<LifecycleState>({
     intelligence: null, evaluation: null, loading: false, error: null,
   });
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => activeRequest.current?.abort(), []);
 
   async function run() {
-    await runLifecycleDemo(setState);
+    activeRequest.current?.abort();
+    const owner = new AbortController();
+    activeRequest.current = owner;
+    await runLifecycleDemo(setState, fetch, { signal: owner.signal });
+    if (activeRequest.current === owner) activeRequest.current = null;
   }
 
   const winner = selectLifecycleWinner(evaluation);
 
-  const routeWinner = intelligence?.routing.candidates[0] ?? null;
+  const routeWinner = intelligence?.routing.candidates.find((item) => item.agentId === intelligence.routing.agent?.id) ?? null;
 
   const stages = intelligence && evaluation ? [
     {
@@ -65,9 +65,9 @@ export function LifecycleConsole() {
       label: "Implementer",
       title: intelligence.routing.agent?.name ?? "No eligible worker",
       detail: routeWinner
-        ? pct(routeWinner.conservativeSuccessProbability) +
+        ? number(routeWinner.conservativeSuccessProbability, "probability") +
           " conservative success · utility " +
-          money(routeWinner.expectedUtility)
+          number(routeWinner.expectedUtility, "currency", true)
         : "No route available",
       state: routeWinner ? "pass" : "fail",
     },
@@ -90,7 +90,7 @@ export function LifecycleConsole() {
         ? intelligence.reviewerPairing.reviewerId
         : "No reviewer evidence",
       detail: intelligence.reviewerPairing
-        ? pct(intelligence.reviewerPairing.catchProbability) +
+        ? number(intelligence.reviewerPairing.catchProbability, "probability") +
           " learned defect-catch probability · " +
           intelligence.reviewerPairing.source +
           " evidence"
@@ -103,7 +103,7 @@ export function LifecycleConsole() {
       label: "Fixture evaluation",
       title: evaluation.evaluations.length + " example patches scored",
       detail: winner
-        ? winner.candidate.agent + " has the highest score from the supplied fixture signals."
+        ? winner.candidate.agent + " is the winner explicitly returned by the fixture policy."
         : "No fixture candidate passed the example policy.",
       state: winner ? "pass" : "fail",
     },
@@ -158,7 +158,7 @@ export function LifecycleConsole() {
       id: "11",
       icon: Radar,
       label: "Fixture attribution",
-      title: pct(intelligence.productionAttribution.confidence) + " evidence-derived confidence",
+      title: number(intelligence.productionAttribution.confidence, "probability") + " fixture attribution confidence",
       detail:
         intelligence.productionAttribution.supportingSignals.slice(0, 2).join(" · ") ||
         "Insufficient independent attribution evidence",
@@ -178,25 +178,30 @@ export function LifecycleConsole() {
   ] : [];
 
   return (
-    <section className="lifecycle-shell" id="console" aria-busy={loading}>
+    <section className="lifecycle-shell fixture-workbench" id="console" aria-labelledby="fixture-heading">
       <div className="lifecycle-header">
         <div>
-          <p className="eyebrow">Fixture demo · engineering labor loop</p>
-          <h2>One mission. One evidence chain. One learned workforce.</h2>
+          <p className="eyebrow">Fixture demo · reported evaluation</p>
+          <h2 id="fixture-heading" className="display-heading">Evidence, inspected.</h2>
           <p>
-            Deterministic example data illustrates team formation, verification,
-            release fencing and production attribution.
+            Compare the returned patches. Inspect their gates, reasons and reported evidence.
           </p>
         </div>
         <button type="button" className="run-button" onClick={run} disabled={loading} aria-busy={loading}>
-          {loading ? <Loader2 className="spin" size={17} /> : <Play size={17} />}
+          {loading ? <Loader2 className="spin" size={17} aria-hidden="true" /> : <Play size={17} aria-hidden="true" />}
           {loading ? "Loading fixture demo" : error ? "Retry fixture demo" : intelligence ? "Run fixture again" : "Run fixture demo"}
         </button>
       </div>
 
+      <p className="fixture-status" role="status" aria-live="polite" aria-atomic="true">
+        {loading ? "Loading reported fixture signals…" : error ? "Fixture unavailable. Retry to recover." : evaluation
+          ? `${number(evaluation.evaluations.length, "count")} fixture candidates loaded. ${selectLifecycleWinner(evaluation) ? "An explicit fixture winner was returned." : "No fixture winner was returned."}`
+          : "Ready to load reported fixture signals"}
+      </p>
+
       <p className="lifecycle-disclosure">
         No live Concord session, model or provider execution, deployment, or release authorization
-        occurs here. All stage results are fixture-driven examples.
+        occurs here. All results score caller-reported fixture signals.
       </p>
 
       {error && (
@@ -206,21 +211,32 @@ export function LifecycleConsole() {
         </div>
       )}
 
-      {!intelligence || !evaluation ? (
+      <div className="fixture-results" aria-busy={loading}>
+      {loading ? (
+        <div className="workspace-loading" aria-hidden="true">
+          <div className="loading-roster"><span /><span /><span /></div>
+          <div className="loading-inspector"><span /><span /><span /><span /></div>
+        </div>
+      ) : !intelligence || !evaluation ? (
         <div className="lifecycle-idle">
-          <div className="lifecycle-orbit"><Radar size={26} /></div>
+          <div className="lifecycle-orbit"><Radar size={26} aria-hidden="true" /></div>
           <div>
-            <strong>{loading ? "Loading example lifecycle data…" : "Explore the fixture from mission to outcome."}</strong>
+            <strong>{error ? "The fixture can be retried." : "Load the fixture to inspect three example patches."}</strong>
             <p>
-              Example signals show routing probability, reviewer complementarity,
-              policy gates, release fencing and production attribution in one chain.
+              The evaluation returns ranked candidates and policy reasons. Selecting a patch changes inspection;
+              the reported winner always keeps its own identity.
             </p>
           </div>
         </div>
       ) : (
         <>
+          <EvaluationWorkspace evaluation={evaluation} selectedCandidateId={selectedCandidateId} onSelectCandidate={setSelectedCandidateId} />
+
+          <details className="fixture-lifecycle">
+            <summary><span>Explore the fixture lifecycle</span><small>Routing, review, release fencing and attribution examples</small></summary>
+            <div className="fixture-lifecycle-content">
           <div className="lifecycle-context">
-            <span><GitBranch size={13} />{intelligence.context.repository}</span>
+            <span><GitBranch size={13} aria-hidden="true" />{intelligence.context.repository}</span>
             <span>{intelligence.context.language}</span>
             <span>{intelligence.context.framework}</span>
             <span>{intelligence.context.taskClass}</span>
@@ -231,12 +247,12 @@ export function LifecycleConsole() {
             {stages.map(({ id, icon: Icon, label, title, detail, state }) => (
               <article className={"lifecycle-stage lifecycle-" + state} key={id}>
                 <div className="lifecycle-stage-top">
-                  <span className="lifecycle-index">{id}</span>
-                  <Icon size={16} />
+                  <span className="lifecycle-index tabular-nums">{id}</span>
+                  <Icon size={16} aria-hidden="true" />
                   <small>{label}</small>
                   <span className="lifecycle-state">
-                    {state === "pass" ? <Check size={13} /> : state === "fail" ? <X size={13} /> : null}
-                    {state}
+                    {state === "pass" ? <Check size={13} aria-hidden="true" /> : state === "fail" ? <X size={13} aria-hidden="true" /> : null}
+                    {state === "observed" ? "fixture" : state}
                   </span>
                 </div>
                 <strong>{title}</strong>
@@ -265,8 +281,11 @@ export function LifecycleConsole() {
               </strong>
             </div>
           </div>
+            </div>
+          </details>
         </>
       )}
+      </div>
     </section>
   );
 }

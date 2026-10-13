@@ -3,7 +3,6 @@ import {
   Activity,
   ArrowRight,
   BadgeCheck,
-  Braces,
   GitCompareArrows,
   Layers3,
   Radar,
@@ -13,6 +12,7 @@ import { LifecycleConsole } from "@/components/lifecycle-console";
 import { ThemeSwitch } from "@/components/theme-switch";
 import formalReceipt from "../../formal/receipts/release-authority-summary.json";
 import { assertFormalReceiptFresh } from "@/core/formal-receipt";
+import { formatOperationalNumber as number } from "@/lib/ui-format";
 
 assertFormalReceiptFresh(formalReceipt, {
   spec: readFileSync("formal/ReleaseAuthority.tla"),
@@ -34,7 +34,7 @@ const capabilities = [
   {
     icon: Radar,
     title: "Model-checked invariants",
-    text: formalReceipt.safe_model.distinct_states.toLocaleString() + " reachable release states checked with a negative-control counterexample.",
+    text: number(formalReceipt.safe_model.distinct_states, "count") + " reachable release states checked with a negative-control counterexample.",
   },
   {
     icon: Layers3,
@@ -45,38 +45,35 @@ const capabilities = [
 
 export default function Home() {
   return (
-    <main>
+    <main id="workspace" className="app-workspace">
+      <a className="skip-link" href="#console">Skip to fixture evaluation</a>
       <nav className="nav-shell" aria-label="Primary">
-        <a className="brand" href="#" aria-label="Archeagent home">
+        <a className="brand" href="#workspace" aria-label="Archeagent home">
           <span className="brand-mark" aria-hidden="true"><span>A</span></span>
           <span className="brand-wordmark">ARCHEAGENT<span className="wordmark-dot">.</span></span>
         </a>
         <div className="nav-links">
-          <a href="#console">The console</a>
+          <a href="#console">Fixture evaluation</a>
+          <a href="#formal-model">Formal model</a>
           <a href="#architecture">Architecture</a>
-          <a className="nav-cta" href="#console">View fixture demo <ArrowRight size={15} /></a>
           <ThemeSwitch />
         </div>
       </nav>
 
-      <section className="hero">
+      <section className="hero workbench-hero" aria-labelledby="workspace-heading">
         <div className="hero-copy-column">
-          <div className="hero-badge"><span className="badge-sparkle" aria-hidden="true">✦</span> THE ART OF VERIFIED INTELLIGENCE</div>
-          <p className="hero-edition">AGENT ENGINEERING / ISSUE 001</p>
-          <h1>INTELLIGENCE,<br /><em>WITH INTEGRITY.</em></h1>
+          <p className="eyebrow">Private local workspace · Archeagent</p>
+          <h1 id="workspace-heading">EVIDENCE,<br /><em>IN VIEW.</em></h1>
           <p className="hero-copy">
-            Coordinated AI engineering deserves evidence as rigorous as the
-            intelligence behind it. This fixture-led console evaluates example outcomes,
-            while release authority remains tied to exact, independently verified states.
+            Compare candidate patches and follow the evidence behind each reported verdict.
+            The fixture workbench keeps selection, policy results and release authority distinct.
           </p>
           <div className="hero-actions">
-            <a className="primary-action" href="#console">Explore fixture evaluation <ArrowRight size={17} /></a>
-            <a className="secondary-action" href="#architecture">Our architecture <ArrowRight size={15} /></a>
+            <a className="secondary-action" href="#console">Open fixture evaluation <ArrowRight size={17} aria-hidden="true" /></a>
           </div>
           <div className="trust-row">
-            <span><BadgeCheck size={15} /> Evidence before assertion</span>
-            <span><Braces size={15} /> TypeScript + Go</span>
-            <span><Activity size={15} /> Model-checked policy</span>
+            <span><BadgeCheck size={15} aria-hidden="true" /> Reported fixture signals</span>
+            <span><Activity size={15} aria-hidden="true" /> Read-only inspection</span>
           </div>
         </div>
         <div className="hero-material" aria-hidden="true">
@@ -91,6 +88,8 @@ export default function Home() {
         </div>
       </section>
 
+      <LifecycleConsole />
+
       <section className="capability-section" aria-labelledby="capabilities-heading">
         <div className="section-intro">
           <span className="section-kicker">THE ARCHITECTURE</span>
@@ -101,8 +100,8 @@ export default function Home() {
           {capabilities.map(({ icon: Icon, title, text }, index) => (
             <article className="capability-card" key={title}>
               <div className="capability-card-top">
-                <div className="capability-icon"><Icon size={19} /></div>
-                <span className="capability-number">0{index + 1} / 04</span>
+                <div className="capability-icon"><Icon size={19} aria-hidden="true" /></div>
+                <span className="capability-number tabular-nums">0{index + 1} / 04</span>
               </div>
               <h3>{title}</h3>
               <p>{text}</p>
@@ -111,43 +110,43 @@ export default function Home() {
         </div>
       </section>
 
-      <LifecycleConsole />
-
-      <section className="formal-receipt">
+      <section className="formal-receipt" id="formal-model" aria-labelledby="formal-model-heading">
         <div>
-          <p className="eyebrow">Machine-checked release authority</p>
-          <h2>{formalReceipt.safe_model.distinct_states.toLocaleString()} reachable states. Zero invariant violations.</h2>
+          <p className="eyebrow">Separate evidence · bounded formal model</p>
+          <h2 id="formal-model-heading" className="display-heading">Bounded proof.</h2>
           <p>
             The safe TLA+ model completed the entire bounded state graph. A negative
             control that intentionally omitted exact base-commit fencing produced the
-            expected counterexample.
+            expected counterexample. These statistics describe the formal model receipt;
+            they do not attest fixture execution or authorize a release.
           </p>
         </div>
-        <div className="formal-stats">
-          <span><strong>{formalReceipt.safe_model.states_generated.toLocaleString()}</strong> states generated</span>
-          <span><strong>{formalReceipt.safe_model.graph_depth}</strong> graph depth</span>
-          <span><strong>PASS</strong> safe model</span>
-          <span className="negative-stat"><strong>CAUGHT</strong> unsafe verifier</span>
-        </div>
+        <dl className="formal-stats">
+          <div><dt>Reachable states</dt><dd className="tabular-nums">{number(formalReceipt.safe_model.distinct_states, "count")}</dd></div>
+          <div><dt>States generated</dt><dd className="tabular-nums">{number(formalReceipt.safe_model.states_generated, "count")}</dd></div>
+          <div><dt>Graph depth</dt><dd className="tabular-nums">{number(formalReceipt.safe_model.graph_depth, "count")}</dd></div>
+          <div><dt>Safe model</dt><dd>PASS</dd></div>
+          <div className="negative-stat"><dt>Unsafe control</dt><dd>CAUGHT</dd></div>
+        </dl>
       </section>
 
 
-      <section className="architecture-section" id="architecture">
+      <section className="architecture-section" id="architecture" aria-labelledby="architecture-heading">
         <div className="architecture-copy">
           <p className="eyebrow">Architecture</p>
-          <h2>The workforce learns from what survives production.</h2>
+          <h2 id="architecture-heading">The engineering loop.</h2>
           <p>
             Routing, review, execution, evidence, release authority and production
-            attribution are one closed loop. Every accepted outcome becomes evidence
-            for the next engineering decision.
+            attribution form one engineering loop. The lifecycle fixture illustrates
+            these mechanics with deterministic example data.
           </p>
         </div>
 
         <div className="architecture-flow">
           <div className="flow-node"><span>01</span><strong>Learned team</strong><small>Success probability, utility and reviewer complement</small></div>
-          <ArrowRight className="flow-arrow" />
+          <ArrowRight className="flow-arrow" aria-hidden="true" />
           <div className="flow-node accent"><span>02</span><strong>Proof chain</strong><small>Execution, evidence, policy, formal checks and signed lease</small></div>
-          <ArrowRight className="flow-arrow" />
+          <ArrowRight className="flow-arrow" aria-hidden="true" />
           <div className="flow-node"><span>03</span><strong>Production learning</strong><small>Evidence-derived attribution mutates contextual trust</small></div>
         </div>
       </section>

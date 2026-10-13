@@ -1,32 +1,13 @@
 "use client";
 import { MoonStar, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
-
-type Appearance = "dark" | "light";
-const KEY = "archeagent-appearance";
-const EVENT = "archeagent-theme-change";
-
-function subscribe(notify: () => void) {
-  window.addEventListener(EVENT, notify);
-  return () => window.removeEventListener(EVENT, notify);
-}
-function getSnapshot(): Appearance {
-  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
-}
-function getServerSnapshot(): Appearance {
-  return "dark";
-}
+import { subscribeAppearance, getAppearance, getServerAppearance, setAppearance } from "../lib/browser-theme";
 
 export function ThemeSwitch() {
-  const appearance = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const appearance = useSyncExternalStore(subscribeAppearance, getAppearance, getServerAppearance);
 
   function toggleTheme() {
-    const next: Appearance = appearance === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem(KEY, next); } catch {
-      // Private browsing may disable storage; toggling still works.
-    }
-    window.dispatchEvent(new Event(EVENT));
+    setAppearance(appearance === "dark" ? "light" : "dark");
   }
 
   return (

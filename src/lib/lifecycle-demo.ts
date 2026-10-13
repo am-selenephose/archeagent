@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { candidatePatchSchema, gateKeySchema, type EvaluationRun } from "./evaluator";
+import { withBrowserDeadline, type BrowserRequestOptions } from "./browser-request";
 
 const strings = z.array(z.string());
 const probability = z.number().min(0).max(1);
@@ -74,16 +75,23 @@ export function selectLifecycleWinner(evaluation: EvaluationRun | null) {
   return matches.length === 1 && matches[0].verdict === "MERGE" ? matches[0] : null;
 }
 
-export async function runLifecycleDemo(update: (state: LifecycleState) => void, fetcher: typeof fetch = fetch) {
+export async function runLifecycleDemo(
+  update: (state: LifecycleState) => void,
+  fetcher: typeof fetch = fetch,
+  options: BrowserRequestOptions = {},
+) {
+  if (options.signal?.aborted) return;
   update({ intelligence: null, evaluation: null, loading: true, error: null });
   let result: LifecycleState = { intelligence: null, evaluation: null, loading: false, error: null };
   try {
-    const [intelResponse, evaluationResponse] = await Promise.all([
-      fetcher("/api/intelligence/demo", { cache: "no-store" }),
-      fetcher("/api/demo", { cache: "no-store" }),
-    ]);
-    if (!intelResponse.ok || !evaluationResponse.ok) throw new Error("Demo request failed");
-    const [intel, evaluated] = await Promise.all([intelResponse.json(), evaluationResponse.json()]);
+    const [intel, evaluated] = await withBrowserDeadline(async (signal) => {
+      const [intelResponse, evaluationResponse] = await Promise.all([
+        fetcher("/api/intelligence/demo", { cache: "no-store", signal }),
+        fetcher("/api/demo", { cache: "no-store", signal }),
+      ]);
+      if (!intelResponse.ok || !evaluationResponse.ok) throw new Error("Demo request failed");
+      return Promise.all([intelResponse.json(), evaluationResponse.json()]);
+    }, options);
     result = {
       intelligence: intelligenceSchema.parse(intel), evaluation: evaluationSchema.parse(evaluated),
       loading: false, error: null,
@@ -91,6 +99,6 @@ export async function runLifecycleDemo(update: (state: LifecycleState) => void, 
   } catch {
     result.error = "Could not load the fixture demo. Check your connection and retry.";
   } finally {
-    update(result);
+    if (!options.signal?.aborted) update(result);
   }
 }

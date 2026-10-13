@@ -12,39 +12,43 @@ export const gateKeySchema = z.enum([
 export type GateKey = z.infer<typeof gateKeySchema>;
 export type GateStatus = "pass" | "warn" | "fail";
 
+const identifierSchema = z.string().min(1).max(128);
+const referenceSchema = z.string().min(1).max(512);
+const reportedTextSchema = z.string().min(1).max(4096);
+
 export const candidatePatchSchema = z.object({
-  id: z.string().min(1),
-  agent: z.string().min(1),
-  model: z.string().min(1),
-  summary: z.string().min(1),
+  id: identifierSchema,
+  agent: identifierSchema,
+  model: identifierSchema,
+  summary: reportedTextSchema,
   filesChanged: z.number().int().nonnegative(),
   additions: z.number().int().nonnegative(),
   deletions: z.number().int().nonnegative(),
   latencyMs: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative(),
-  branch: z.string().min(1),
+  branch: referenceSchema,
   signals: z.object({
     tests: z.object({
       passed: z.boolean(),
       total: z.number().int().nonnegative(),
       failed: z.number().int().nonnegative(),
-      note: z.string().min(1),
+      note: reportedTextSchema,
     }),
-    contract: z.object({ passed: z.boolean(), note: z.string().min(1) }),
-    security: z.object({ passed: z.boolean(), note: z.string().min(1) }),
-    migration: z.object({ passed: z.boolean(), note: z.string().min(1) }),
-    performance: z.object({ passed: z.boolean(), note: z.string().min(1) }),
+    contract: z.object({ passed: z.boolean(), note: reportedTextSchema }),
+    security: z.object({ passed: z.boolean(), note: reportedTextSchema }),
+    migration: z.object({ passed: z.boolean(), note: reportedTextSchema }),
+    performance: z.object({ passed: z.boolean(), note: reportedTextSchema }),
     evidence: z.object({
       passed: z.boolean(),
       coverage: z.number().min(0).max(1),
-      note: z.string().min(1),
+      note: reportedTextSchema,
     }),
   }),
 });
 
 export const evaluationRequestSchema = z.object({
-  repository: z.string().min(1),
-  target: z.string().min(1),
+  repository: referenceSchema,
+  target: referenceSchema,
   candidates: z.array(candidatePatchSchema).min(1).max(12),
 });
 
@@ -87,12 +91,12 @@ const gateConfig: Record<
   GateKey,
   { label: string; weight: number; critical: boolean }
 > = {
-  tests: { label: "Regression suite", weight: 25, critical: true },
-  contract: { label: "API contract", weight: 15, critical: true },
-  security: { label: "Security boundary", weight: 20, critical: true },
-  migration: { label: "Schema migration", weight: 15, critical: false },
-  performance: { label: "Performance", weight: 10, critical: false },
-  evidence: { label: "Evidence quality", weight: 15, critical: false },
+  tests: { label: "Reported regression suite", weight: 25, critical: true },
+  contract: { label: "Reported API contract", weight: 15, critical: true },
+  security: { label: "Reported security boundary", weight: 20, critical: true },
+  migration: { label: "Reported schema migration", weight: 15, critical: false },
+  performance: { label: "Reported performance", weight: 10, critical: false },
+  evidence: { label: "Reported evidence quality", weight: 15, critical: false },
 };
 
 function gateResult(candidate: CandidatePatch, key: GateKey): GateResult {
@@ -117,12 +121,20 @@ function gateResult(candidate: CandidatePatch, key: GateKey): GateResult {
   }
 
   const signal = candidate.signals[key];
+  const passed = key === "tests"
+    ? signal.passed === true &&
+      Number.isSafeInteger(candidate.signals.tests.total) &&
+      candidate.signals.tests.total > 0 &&
+      Number.isSafeInteger(candidate.signals.tests.failed) &&
+      candidate.signals.tests.failed === 0
+    : signal.passed;
+
   return {
     key,
     label: config.label,
-    status: signal.passed ? "pass" : "fail",
+    status: passed ? "pass" : "fail",
     weight: config.weight,
-    earned: signal.passed ? config.weight : 0,
+    earned: passed ? config.weight : 0,
     note: signal.note,
     critical: config.critical,
   };
@@ -145,19 +157,20 @@ export function evaluateCandidate(candidate: CandidatePatch): CandidateEvaluatio
 
   const reasons = [
     ...criticalFailures.map(
-      (gate) => `${gate.label} failed a critical release boundary.`,
+      (gate) => `${gate.label} failed a critical reported-signal gate.`,
     ),
     ...nonCriticalFailures.map(
-      (gate) => `${gate.label} is incomplete and blocks automatic acceptance.`,
+      (gate) => `${gate.label} is incomplete and blocks a MERGE scoring verdict.`,
     ),
   ];
 
   if (verdict === "MERGE") {
-    reasons.push("All release boundaries passed with sufficient reproducible evidence.");
+    reasons.push("All reported gates passed with sufficient reported evidence for a MERGE scoring verdict.");
   }
   if (verdict === "NEEDS_WORK" && reasons.length === 0) {
-    reasons.push("The patch is plausible but the evidence score is below the merge threshold.");
+    reasons.push("The reported evidence score is below the MERGE scoring threshold.");
   }
+  reasons.push("This result scores caller-reported signals; it does not execute tests or authorize release.");
 
   return { candidate, gates, score, verdict, reasons };
 }
@@ -184,7 +197,7 @@ export function evaluateRun(input: EvaluationRequest): EvaluationRun {
     policy: {
       mergeThreshold: 85,
       criticalGates: ["tests", "contract", "security"],
-      principle: "Evidence beats confidence. A plausible patch is not a safe patch.",
+      principle: "Caller-reported signals only. MERGE is a scoring verdict; it does not authorize release or attest executed tests.",
     },
   };
 }

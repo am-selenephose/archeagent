@@ -21,7 +21,10 @@
     "concord:gate": "tsx scripts/concord-review-gate.ts"
   },
   "dependencies": {
+    "@concord-ai/concord-mcp": "0.13.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@opentelemetry/api": "^1.9.1",
+    "better-sqlite3": "13.0.2",
     "ioredis": "^6.0.0",
     "lucide-react": "^1.48.0",
     "next": "16.3.8",
@@ -33,6 +36,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "7.6.13",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

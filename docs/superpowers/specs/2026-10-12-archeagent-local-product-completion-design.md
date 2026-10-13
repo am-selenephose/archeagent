@@ -1,8 +1,10 @@
 # Archeagent local product completion — design for review
 
 Date: 2026-10-12, Asia/Karachi.
-Status: architecture direction approved; **this written specification awaits
-owner review**. It is not an implementation or completion receipt.
+Status: **written specification approved by the owner on 2026-10-12** for local
+implementation and testing, with the publication hold intact. The owner also
+approved the app-first UI upgrade and AXUNO display/Jost operational typography.
+This document is not an implementation or completion receipt.
 
 ## Intent and immutable constraints
 
@@ -389,7 +391,6 @@ PARTIAL means a missing session/manual gate or unverified required behavior;
 FAIL means a reproduced safety/functional gate remains failing. A green legacy
 test suite cannot override a missing requirement or adversarial failure.
 
-This specification's approval is the next required gate. After approval, write
-the concrete implementation plan, review its dependency/file/test contracts,
-and select inline or delegated execution before implementation. Do not treat
-architecture-direction approval as approval of this unseen written artifact.
+The owner explicitly directed implementation rather than another specification
+handoff. Execute the concrete local plan with test-first independent tasks and
+review. Do not infer release authority from this implementation approval.

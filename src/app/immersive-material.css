@@ -365,20 +365,9 @@ main { width: 100%; max-width: none; margin: 0; padding: 0; isolation: isolate; 
 footer { padding: 42px clamp(24px, 5.2vw, 96px); margin: 0; }
 footer p { font-size: 16px; }
 
-/* AXUNO remains the exclusive letterface: increase legibility with size,
- * letter spacing and a hairline weight reinforcement, not substitutions. */
-html body,
-html body *,
-html body *::before,
-html body *::after { letter-spacing: .018em !important; }
+/* Display letterforms stay exact; operational text uses the existing Jost face. */
 .hero h1, .section-intro h2, .architecture-copy h2,
 .brand-wordmark, .console-topbar h2, .lifecycle-header h2 { letter-spacing: .008em !important; }
-html[data-theme="light"] p,
-html[data-theme="light"] small,
-html[data-theme="light"] .hero-copy,
-html[data-theme="light"] .capability-card p,
-html[data-theme="light"] .gate-main p,
-html[data-theme="light"] .lifecycle-stage > p { -webkit-text-stroke: .14px currentColor; }
 html[data-theme="light"] .eyebrow,
 html[data-theme="light"] .hero-badge,
 html[data-theme="light"] .hero-edition,

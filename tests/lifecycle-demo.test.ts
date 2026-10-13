@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { LifecycleConsole } from "../src/components/lifecycle-console";
 import { demoRequest } from "../src/lib/demo";
 import { evaluateRun } from "../src/lib/evaluator";
@@ -32,11 +32,64 @@ function successfulFetch(): typeof fetch {
 }
 
 describe("Lifecycle fixture demo recovery", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each(["request", "body"])("ends a hanging %s within the shared request deadline", async (hang) => {
+    vi.useFakeTimers();
+    const recorder = stateRecorder();
+    const fetcher: typeof fetch = async () => hang === "request"
+      ? new Promise<Response>(() => {})
+      : { ok: true, json: () => new Promise(() => {}) } as Response;
+    const operation = runLifecycleDemo(recorder.update, fetcher, { timeoutMs: 25 });
+    await vi.advanceTimersByTimeAsync(25);
+    expect(recorder.states.at(-1)?.loading).toBe(false);
+    expect(recorder.states.at(-1)?.error).toMatch(/retry/i);
+    await operation;
+  });
+
+  it("does not publish a late response after the owning component cancels", async () => {
+    const recorder = stateRecorder();
+    const controller = new AbortController();
+    let release: (() => void) | undefined;
+    const paused = new Promise<void>((resolve) => { release = resolve; });
+    const fetcher: typeof fetch = async (input) => {
+      await paused;
+      return successfulFetch()(input);
+    };
+    const operation = runLifecycleDemo(recorder.update, fetcher, { signal: controller.signal });
+    controller.abort();
+    release?.();
+    await operation;
+    expect(recorder.states).toHaveLength(1);
+    expect(recorder.states[0].loading).toBe(true);
+  });
+
+  it("publishes only the replacement request after supersession", async () => {
+    const recorder = stateRecorder();
+    const controller = new AbortController();
+    let release: (() => void) | undefined;
+    const paused = new Promise<void>((resolve) => { release = resolve; });
+    const previous = runLifecycleDemo(recorder.update, async (input) => {
+      await paused;
+      return successfulFetch()(input);
+    }, { signal: controller.signal });
+    controller.abort();
+    await runLifecycleDemo(recorder.update, successfulFetch());
+    const countAfterReplacement = recorder.states.length;
+    release?.();
+    await previous;
+    expect(recorder.states).toHaveLength(countAfterReplacement);
+    expect(recorder.states.at(-1)).toMatchObject({ evaluation, loading: false, error: null });
+  });
+
   it("labels the rendered console as a fixture with no live execution or release", () => {
     const html = renderToStaticMarkup(createElement(LifecycleConsole));
     expect(html).toContain("Fixture demo");
     expect(html).toContain("No live Concord session, model or provider execution, deployment, or release authorization");
     expect(html).toContain("Run fixture demo");
+    expect(html).toContain('aria-labelledby="fixture-heading"');
+    expect(html).toContain('role="status"');
+    expect(html).toContain("Ready to load reported fixture signals");
   });
 
   it("loads both valid fixture responses and clears the running state", async () => {

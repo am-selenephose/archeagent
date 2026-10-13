@@ -1,15 +1,18 @@
 package sandbox
 
 import (
+	_ "crypto/sha256" // Register SHA-256 for Docker image digest validation.
 	"errors"
 	"fmt"
+	"math"
 	"path"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/distribution/reference"
 )
 
-var imagePattern = regexp.MustCompile("^[a-zA-Z0-9._/:@-]+$")
 var envKeyPattern = regexp.MustCompile("^[A-Z_][A-Z0-9_]*$")
 
 type Spec struct {
@@ -24,8 +27,29 @@ type Spec struct {
 	ReadOnlyRootFS  bool              `json:"read_only_rootfs"`
 }
 
+// ExecutionPolicy is operator configuration, never part of request JSON.
+// Its zero value preserves network-off and a read-only container root.
+type ExecutionPolicy struct {
+	AllowNetwork        bool
+	AllowWritableRootFS bool
+}
+
+func (p ExecutionPolicy) Validate(spec Spec) error {
+	if spec.NetworkEnabled && !p.AllowNetwork {
+		return errors.New("network execution requires operator policy")
+	}
+	if !spec.ReadOnlyRootFS && !p.AllowWritableRootFS {
+		return errors.New("writable root requires operator policy")
+	}
+	return nil
+}
+
 func (s Spec) Validate() error {
-	if !imagePattern.MatchString(s.Image) {
+	// Reject options explicitly before parsing and before any Docker argv exists.
+	if strings.HasPrefix(s.Image, "-") {
+		return errors.New("invalid container image")
+	}
+	if _, err := reference.ParseNormalizedNamed(s.Image); err != nil {
 		return errors.New("invalid container image")
 	}
 	if len(s.Command) == 0 {
@@ -37,7 +61,9 @@ func (s Spec) Validate() error {
 	if s.MemoryMegabytes < 64 || s.MemoryMegabytes > 32768 {
 		return errors.New("memory limit out of range")
 	}
-	if s.CPUs <= 0 || s.CPUs > 16 {
+	// Local policy supports at least 1 ms of quota per default 100 ms CPU
+	// period. Smaller values must not silently become an unset Docker limit.
+	if math.IsNaN(s.CPUs) || math.IsInf(s.CPUs, 0) || s.CPUs < 0.01 || s.CPUs > 16 {
 		return errors.New("cpu limit out of range")
 	}
 	if path.Clean(s.WorkDir) != s.WorkDir || (s.WorkDir != "/workspace" && !strings.HasPrefix(s.WorkDir, "/workspace/")) {

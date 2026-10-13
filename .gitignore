@@ -46,3 +46,9 @@ shipproof-home.png
 
 # Concord local SQLite, agent state and generated task transcripts
 .concord/
+
+# Private local execution evidence, plan scratch and personal-use font
+/.local-audit/
+/.superpowers/
+/public/fonts/axuno-original-demo.otf
+.next-local-completion/

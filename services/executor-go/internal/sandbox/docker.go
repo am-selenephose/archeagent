@@ -10,11 +10,35 @@ import (
 )
 
 type Result struct {
-	ExitCode   int    `json:"exit_code"`
-	Stdout     string `json:"stdout"`
-	Stderr     string `json:"stderr"`
-	DurationMs int64  `json:"duration_ms"`
-	TimedOut   bool   `json:"timed_out"`
+	ExitCode        int    `json:"exit_code"`
+	Stdout          string `json:"stdout"`
+	Stderr          string `json:"stderr"`
+	DurationMs      int64  `json:"duration_ms"`
+	TimedOut        bool   `json:"timed_out"`
+	OutputTruncated bool   `json:"output_truncated"`
+}
+
+const MaxOutputBytes = 64 * 1024
+
+var ErrOutputLimitExceeded = errors.New("execution output limit exceeded")
+
+// Keep draining process pipes after the limit without retaining more bytes.
+// Returning the full write count prevents a chatty process from blocking on a
+// full pipe while its execution timeout or request cancellation is pending.
+type boundedOutput struct {
+	strings.Builder
+	truncated bool
+}
+
+func (b *boundedOutput) Write(p []byte) (int, error) {
+	written := len(p)
+	remaining := MaxOutputBytes - b.Len()
+	if len(p) > remaining {
+		p = p[:remaining]
+		b.truncated = true
+	}
+	_, _ = b.Builder.Write(p)
+	return written, nil
 }
 
 type Runner interface {
@@ -23,6 +47,7 @@ type Runner interface {
 
 type DockerRunner struct {
 	Binary string
+	Policy ExecutionPolicy
 }
 
 func (r DockerRunner) dockerBinary() string {
@@ -33,7 +58,14 @@ func (r DockerRunner) dockerBinary() string {
 }
 
 func Args(spec Spec) ([]string, error) {
+	return ArgsWithPolicy(spec, ExecutionPolicy{})
+}
+
+func ArgsWithPolicy(spec Spec, policy ExecutionPolicy) ([]string, error) {
 	if err := spec.Validate(); err != nil {
+		return nil, err
+	}
+	if err := policy.Validate(spec); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +76,7 @@ func Args(spec Spec) ([]string, error) {
 		"--security-opt=no-new-privileges",
 		"--pids-limit=256",
 		"--memory=" + strconv.Itoa(spec.MemoryMegabytes) + "m",
-		"--cpus=" + strconv.FormatFloat(spec.CPUs, 'f', 2, 64),
+		"--cpus=" + strconv.FormatFloat(spec.CPUs, 'f', -1, 64),
 		"--workdir=" + spec.WorkDir,
 	}
 
@@ -68,7 +100,7 @@ func Args(spec Spec) ([]string, error) {
 }
 
 func (r DockerRunner) Run(parent context.Context, spec Spec) (Result, error) {
-	args, err := Args(spec)
+	args, err := ArgsWithPolicy(spec, r.Policy)
 	if err != nil {
 		return Result{}, err
 	}
@@ -78,8 +110,9 @@ func (r DockerRunner) Run(parent context.Context, spec Spec) (Result, error) {
 
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, r.dockerBinary(), args...)
-	var stdout strings.Builder
-	var stderr strings.Builder
+	cmd.WaitDelay = time.Second
+	var stdout boundedOutput
+	var stderr boundedOutput
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
@@ -87,10 +120,11 @@ func (r DockerRunner) Run(parent context.Context, spec Spec) (Result, error) {
 	duration := time.Since(start)
 
 	result := Result{
-		Stdout:     stdout.String(),
-		Stderr:     stderr.String(),
-		DurationMs: duration.Milliseconds(),
-		TimedOut:   errors.Is(ctx.Err(), context.DeadlineExceeded),
+		Stdout:          stdout.String(),
+		Stderr:          stderr.String(),
+		DurationMs:      duration.Milliseconds(),
+		TimedOut:        errors.Is(ctx.Err(), context.DeadlineExceeded),
+		OutputTruncated: stdout.truncated || stderr.truncated,
 	}
 
 	if cmd.ProcessState != nil {
@@ -101,6 +135,12 @@ func (r DockerRunner) Run(parent context.Context, spec Spec) (Result, error) {
 
 	if result.TimedOut {
 		return result, context.DeadlineExceeded
+	}
+	if ctx.Err() != nil {
+		return result, ctx.Err()
+	}
+	if result.OutputTruncated {
+		return result, ErrOutputLimitExceeded
 	}
 
 	var exitErr *exec.ExitError

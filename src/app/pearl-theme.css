@@ -776,11 +776,11 @@ html[data-theme="light"] .capability-card::after { opacity: .52; }
   font-display: swap;
 }
 
-html,
-body,
-body *,
-body *::before,
-body *::after {
+.brand-wordmark,
+.brand-mark,
+.hero h1,
+.display-heading,
+.section-intro h2 {
   font-family: "Axuno Exact Local Preview", "Jost", sans-serif !important;
   font-weight: 400 !important;
   font-style: normal !important;
@@ -788,7 +788,7 @@ body *::after {
   letter-spacing: -0.018em !important;
 }
 
-/* The source is a thin display face. Keep controls legible and clickable. */
+/* The original thin letterforms remain unchanged and scoped to short display text. */
 .hero h1 {
   font-size: clamp(40px, 5.7vw, 83px);
   line-height: 1.21;
